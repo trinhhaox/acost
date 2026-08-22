@@ -7,6 +7,7 @@ import { LogScanner } from './engine/logScanner';
 import { ReportGenerator } from './engine/reportGenerator';
 import { StatusBarManager } from './providers/statusBarManager';
 import { CostSidebarProvider } from './providers/costSidebarProvider';
+import { getTranslation } from './i18n';
 
 let scanner: LogScanner;
 let statusBar: StatusBarManager;
@@ -20,7 +21,10 @@ let currentDateFilter: 'all' | 'today' | '7d' | '30d' = 'all';
 
 function loadConfig(): PricingConfig {
     const wsConfig = vscode.workspace.getConfiguration('antigravityCost');
+    // Nếu chưa set language, kiểm tra xem UI VS Code có phải vi không
+    const defaultLang = vscode.env.language.startsWith('vi') ? 'vi' : 'vi';
     return {
+        language: wsConfig.get<'vi' | 'en'>('language', defaultLang),
         currency: wsConfig.get<'USD' | 'VND'>('currency', 'USD'),
         vndExchangeRate: wsConfig.get<number>('vndExchangeRate', 25500),
         markupMultiplier: wsConfig.get<number>('markupMultiplier', 2.5),
@@ -55,15 +59,23 @@ async function performScan(showNotification = false, targetWs?: string, dateFilt
     sidebarProvider.updateReport(currentReport, currentConfig);
 
     if (showNotification && currentReport) {
-        vscode.window.showInformationMessage(
-            `Antigravity Cost [${currentReport.projectName}]: Đã quét ${currentReport.totalSessions} sessions (${ReportGenerator.formatNumber(currentReport.totalTokens)} tokens, ~$${currentReport.totalCostUSD.toFixed(3)})`
-        );
+        const isEn = currentConfig.language === 'en';
+        if (isEn) {
+            vscode.window.showInformationMessage(
+                `Antigravity Cost [${currentReport.projectName}]: Scanned ${currentReport.totalSessions} sessions (${ReportGenerator.formatNumber(currentReport.totalTokens)} tokens, ~$${currentReport.totalCostUSD.toFixed(3)})`
+            );
+        } else {
+            vscode.window.showInformationMessage(
+                `Antigravity Cost [${currentReport.projectName}]: Đã quét ${currentReport.totalSessions} sessions (${ReportGenerator.formatNumber(currentReport.totalTokens)} tokens, ~$${currentReport.totalCostUSD.toFixed(3)})`
+            );
+        }
     }
 }
 
 async function handleExportReport(format: 'markdown' | 'html' | 'json' = 'markdown') {
+    const t = getTranslation(currentConfig.language);
     if (!currentReport || currentReport.totalSessions === 0) {
-        vscode.window.showWarningMessage('Chưa có dữ liệu chi phí để xuất báo cáo.');
+        vscode.window.showWarningMessage(currentConfig.language === 'en' ? 'No cost data available to export.' : 'Chưa có dữ liệu chi phí để xuất báo cáo.');
         return;
     }
 
@@ -87,17 +99,15 @@ async function handleExportReport(format: 'markdown' | 'html' | 'json' = 'markdo
 
     try {
         fs.writeFileSync(targetPath, content, 'utf8');
-        const openAction = 'Mở File';
-        const choice = await vscode.window.showInformationMessage(
-            `Đã xuất báo cáo định giá thành công: ${filename}`,
-            openAction
-        );
+        const openAction = t.openFile;
+        const successMsg = t.reportExportSuccess.replace('{filename}', filename);
+        const choice = await vscode.window.showInformationMessage(successMsg, openAction);
         if (choice === openAction) {
             const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(targetPath));
             await vscode.window.showTextDocument(doc);
         }
     } catch (err: any) {
-        vscode.window.showErrorMessage(`Lỗi khi xuất file báo cáo: ${err?.message || err}`);
+        vscode.window.showErrorMessage(t.exportError.replace('{err}', err?.message || err));
     }
 }
 
@@ -111,7 +121,7 @@ function initLiveWatcher() {
                     if (debounceTimer) clearTimeout(debounceTimer);
                     debounceTimer = setTimeout(() => {
                         performScan();
-                    }, 1500); // 1.5s debounce
+                    }, 1500);
                 }
             });
         }
@@ -174,21 +184,23 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
 
-    // Quick Pick Menu
+    // Quick Pick Menu song ngữ
     context.subscriptions.push(
         vscode.commands.registerCommand('antigravity-cost.menu', async () => {
+            const t = getTranslation(currentConfig.language);
             type MenuItem = vscode.QuickPickItem & { id: string };
             const items: MenuItem[] = [
-                { id: 'dashboard', label: '$(dashboard) Mở Dashboard Định Giá', description: 'Xem chi tiết token, model & files' },
-                { id: 'refresh', label: '$(refresh) Quét lại dữ liệu chi phí', description: 'Cập nhật lại toàn bộ sessions trong workspace' },
-                { id: 'export_md', label: '$(file-text) Xuất Báo Cáo Markdown', description: 'Tạo file PROJECT_VALUATION_REPORT.md' },
-                { id: 'export_html', label: '$(file-code) Xuất Báo Cáo HTML / PDF', description: 'Tạo file PROJECT_VALUATION_REPORT.html để in' },
-                { id: 'toggle_currency', label: '$(symbol-unit) Đổi Tiền Tệ (USD / VND)', description: `Hiện tại: ${currentConfig.currency}` },
-                { id: 'settings', label: '$(gear) Cài đặt Định Giá & Tỷ Giá', description: 'Chỉnh Markup, Tỷ giá VND, Dev rate' }
+                { id: 'dashboard', label: t.menuOpenDashboard, description: t.menuOpenDashboardDesc },
+                { id: 'refresh', label: t.menuRefresh, description: t.menuRefreshDesc },
+                { id: 'export_md', label: t.menuExportMd, description: t.menuExportMdDesc },
+                { id: 'export_html', label: t.menuExportHtml, description: t.menuExportHtmlDesc },
+                { id: 'toggle_currency', label: t.menuToggleCurrency, description: `Current: ${currentConfig.currency}` },
+                { id: 'toggle_language', label: t.menuToggleLanguage, description: `Current: ${currentConfig.language === 'en' ? '🇬🇧 English' : '🇻🇳 Tiếng Việt'}` },
+                { id: 'settings', label: t.menuSettings, description: t.menuSettingsDesc }
             ];
 
             const pick = await vscode.window.showQuickPick(items, {
-                placeHolder: 'Antigravity AI Cost & Project Valuation'
+                placeHolder: `Antigravity AI Cost & Valuation (${currentConfig.language.toUpperCase()})`
             });
 
             if (!pick) return;
@@ -211,7 +223,15 @@ export function activate(context: vscode.ExtensionContext) {
                     currentConfig.currency = newCurr;
                     scanner.updateConfig(currentConfig);
                     await performScan();
-                    vscode.window.showInformationMessage(`Đã đổi đơn vị tiền tệ sang: ${newCurr}`);
+                    vscode.window.showInformationMessage(currentConfig.language === 'en' ? `Switched currency to: ${newCurr}` : `Đã đổi đơn vị tiền tệ sang: ${newCurr}`);
+                    break;
+                }
+                case 'toggle_language': {
+                    const newLang = currentConfig.language === 'vi' ? 'en' : 'vi';
+                    currentConfig.language = newLang;
+                    scanner.updateConfig(currentConfig);
+                    await performScan();
+                    vscode.window.showInformationMessage(newLang === 'en' ? 'Switched language to English 🇬🇧' : 'Đã đổi ngôn ngữ sang Tiếng Việt 🇻🇳');
                     break;
                 }
                 case 'settings':

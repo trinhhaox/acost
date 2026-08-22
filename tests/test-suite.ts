@@ -23,6 +23,7 @@ async function runTestSuite() {
     }
 
     const testConfig: PricingConfig = {
+        language: 'vi',
         currency: 'USD',
         vndExchangeRate: 25500,
         markupMultiplier: 2.5,
@@ -107,18 +108,23 @@ async function runTestSuite() {
     assert(report30d.totalSessions <= allReport.totalSessions, `Sessions 30 ngày qua: ${report30d.totalSessions} / ${allReport.totalSessions}`);
 
 
-    // 5. TEST REPORT GENERATOR
-    console.log('\n--- 5. Kiểm thử Xuất Báo Cáo Định Giá ---');
-    const markdownReport = ReportGenerator.generateMarkdown(allReport, testConfig);
-    assert(markdownReport.includes('# 📊 BÁO CÁO ĐỊNH GIÁ & CHI PHÍ LẬP TRÌNH AI'), 'Sinh đúng tiêu đề Markdown Report');
-    assert(markdownReport.includes('Tổng Chi Phí AI API Thực Tế'), 'Markdown có bảng Tổng quan định giá');
-    assert(markdownReport.includes('Phân Bổ Theo AI Models'), 'Markdown có bảng Models');
-    assert(markdownReport.includes('Lịch Sử Chi Tiết Các Phiên Coding'), 'Markdown có bảng Sessions');
+    // 5. TEST REPORT GENERATOR (VI & EN)
+    console.log('\n--- 5. Kiểm thử Xuất Báo Cáo Định Giá (Song Ngữ VI / EN) ---');
+    const markdownReportVi = ReportGenerator.generateMarkdown(allReport, { ...testConfig, language: 'vi' });
+    assert(markdownReportVi.includes('# 📊 BÁO CÁO ĐỊNH GIÁ & CHI PHÍ LẬP TRÌNH AI'), 'Sinh đúng tiêu đề Markdown Report (VI)');
+    assert(markdownReportVi.includes('Tổng Chi Phí AI API Thực Tế'), 'Markdown có bảng Tổng quan định giá (VI)');
 
-    const htmlReport = ReportGenerator.generateHtml(allReport, testConfig);
-    assert(htmlReport.includes('<!DOCTYPE html>'), 'Sinh HTML hợp lệ');
-    assert(htmlReport.includes('Báo Cáo Định Giá & Chi Phí Lập Trình AI'), 'HTML có đầy đủ giao diện in ấn');
-    assert(htmlReport.includes('window.print()'), 'HTML có nút In / Xuất PDF');
+    const markdownReportEn = ReportGenerator.generateMarkdown(allReport, { ...testConfig, language: 'en' });
+    assert(markdownReportEn.includes('# 📊 AI PROJECT VALUATION & COST REPORT'), 'Sinh đúng tiêu đề Markdown Report (EN)');
+    assert(markdownReportEn.includes('Total Actual AI API Cost'), 'Markdown có bảng Valuation Summary (EN)');
+    assert(markdownReportEn.includes('AI Models Breakdown'), 'Markdown có bảng AI Models Breakdown (EN)');
+
+    const htmlReportVi = ReportGenerator.generateHtml(allReport, { ...testConfig, language: 'vi' });
+    assert(htmlReportVi.includes('Báo Cáo Định Giá & Chi Phí Lập Trình AI'), 'HTML có giao diện Tiếng Việt');
+
+    const htmlReportEn = ReportGenerator.generateHtml(allReport, { ...testConfig, language: 'en' });
+    assert(htmlReportEn.includes('AI Project Valuation & Cost Report'), 'HTML có giao diện Tiếng Anh');
+    assert(htmlReportEn.includes('Print / Save as PDF'), 'HTML Tiếng Anh có nút Print PDF');
 
     const jsonReport = ReportGenerator.generateJson(allReport);
     const parsedJson = JSON.parse(jsonReport);

@@ -2,7 +2,7 @@
   "name": "antigravity-cost",
   "displayName": "Antigravity Project AI Cost & Valuation",
   "description": "Phân tích và định giá dự án: Đo lường model sử dụng, token tiêu thụ, thời gian coding và quy đổi chi phí AI trong Antigravity IDE",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "publisher": "antigravity-tools",
   "engines": {
     "vscode": "^1.85.0"
@@ -84,6 +84,12 @@
     "configuration": {
       "title": "Antigravity Cost & Valuation",
       "properties": {
+        "antigravityCost.language": {
+          "type": "string",
+          "enum": ["vi", "en"],
+          "default": "vi",
+          "description": "Ngôn ngữ hiển thị giao diện và báo cáo (vi: Tiếng Việt, en: English)"
+        },
         "antigravityCost.currency": {
           "type": "string",
           "enum": ["USD", "VND"],

@@ -95,6 +95,7 @@ export interface ProjectCostReport {
 }
 
 export interface PricingConfig {
+    language: 'vi' | 'en';
     currency: 'USD' | 'VND';
     vndExchangeRate: number;
     markupMultiplier: number;

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ProjectCostReport, PricingConfig } from '../types';
 import { ReportGenerator } from '../engine/reportGenerator';
+import { TRANSLATIONS } from '../i18n';
 
 export class CostSidebarProvider implements vscode.WebviewViewProvider {
     private _view?: vscode.WebviewView;
@@ -50,6 +51,7 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
                     break;
                 case 'copySummary': {
                     if (this._currentReport) {
+                        const isEn = this._currentConfig.language === 'en';
                         const isVnd = this._currentConfig.currency === 'VND';
                         const cost = isVnd
                             ? `${ReportGenerator.formatNumber(this._currentReport.totalCostVND)} ₫`
@@ -57,9 +59,16 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
                         const val = isVnd
                             ? `${ReportGenerator.formatNumber(this._currentReport.valuation.recommendedValuationVND)} ₫`
                             : `$${this._currentReport.valuation.recommendedValuationUSD.toFixed(2)}`;
-                        const summary = `📊 [Antigravity AI Cost] Dự án: ${this._currentReport.projectName}\n- Chi phí Token AI: ${cost}\n- Định giá đề xuất: ${val}\n- Tổng Tokens: ${ReportGenerator.formatNumber(this._currentReport.totalTokens)}\n- Active Time: ${ReportGenerator.formatDuration(this._currentReport.activeDurationSeconds)} (${this._currentReport.totalSessions} sessions)`;
+
+                        let summary = '';
+                        if (isEn) {
+                            summary = `📊 [Antigravity AI Cost] Project: ${this._currentReport.projectName}\n- AI Token Cost: ${cost}\n- Recommended Valuation: ${val}\n- Total Tokens: ${ReportGenerator.formatNumber(this._currentReport.totalTokens)}\n- Active Time: ${ReportGenerator.formatDuration(this._currentReport.activeDurationSeconds)} (${this._currentReport.totalSessions} sessions)`;
+                            vscode.window.showInformationMessage('Valuation summary copied to clipboard!');
+                        } else {
+                            summary = `📊 [Antigravity AI Cost] Dự án: ${this._currentReport.projectName}\n- Chi phí Token AI: ${cost}\n- Định giá đề xuất: ${val}\n- Tổng Tokens: ${ReportGenerator.formatNumber(this._currentReport.totalTokens)}\n- Active Time: ${ReportGenerator.formatDuration(this._currentReport.activeDurationSeconds)} (${this._currentReport.totalSessions} sessions)`;
+                            vscode.window.showInformationMessage('Đã sao chép tóm tắt định giá vào Clipboard!');
+                        }
                         await vscode.env.clipboard.writeText(summary);
-                        vscode.window.showInformationMessage('Đã sao chép tóm tắt định giá vào Clipboard!');
                     }
                     break;
                 }
@@ -81,7 +90,8 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
             this._view.webview.postMessage({
                 type: 'update',
                 report,
-                config
+                config,
+                translations: TRANSLATIONS
             });
         }
     }
@@ -402,7 +412,7 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
             padding: 4px 6px;
             border-radius: 4px;
             font-size: 12px;
-            width: 100px;
+            width: 110px;
             text-align: right;
         }
 
@@ -479,7 +489,7 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
 <body>
     <div class="header">
         <div class="header-title">
-            <span>✨ AI Project Cost</span>
+            <span id="txtHeaderTitle">✨ AI Project Cost</span>
         </div>
         <div class="header-actions">
             <button class="btn-icon" id="btnRefresh" title="Làm mới dữ liệu">🔄</button>
@@ -490,22 +500,22 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
     <!-- Project Switcher -->
     <div class="project-select-box">
         <select class="select-full" id="selectProject">
-            <option value="CURRENT">Đang tải danh sách dự án...</option>
+            <option value="CURRENT">Loading projects...</option>
         </select>
     </div>
 
     <!-- Filter Pills -->
     <div class="filter-pills">
-        <div class="pill active" data-filter="all">Tất cả</div>
-        <div class="pill" data-filter="today">Hôm nay</div>
-        <div class="pill" data-filter="7d">7 ngày</div>
-        <div class="pill" data-filter="30d">30 ngày</div>
+        <div class="pill active" id="pillAll" data-filter="all">Tất cả</div>
+        <div class="pill" id="pillToday" data-filter="today">Hôm nay</div>
+        <div class="pill" id="pill7d" data-filter="7d">7 ngày</div>
+        <div class="pill" id="pill30d" data-filter="30d">30 ngày</div>
     </div>
 
     <!-- Hero Card: Valuation -->
     <div class="hero-card">
         <button class="btn-copy-float" id="btnCopySummary" title="Sao chép tóm tắt">📋 Copy</button>
-        <div class="hero-label">Định Giá Hoàn Thành Đề Xuất</div>
+        <div class="hero-label" id="txtValHeroLabel">Định Giá Hoàn Thành Đề Xuất</div>
         <div class="hero-value" id="valRecommended">$0.00</div>
         <div class="hero-sub" id="valSub">Markup x2.5 + Công vận hành AI</div>
     </div>
@@ -513,22 +523,22 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
     <!-- Stats Grid -->
     <div class="grid-2">
         <div class="stat-card">
-            <div class="stat-label">Chi Phí AI Token</div>
+            <div class="stat-label" id="txtStatApiCost">Chi Phí AI Token</div>
             <div class="stat-val" id="statApiCost">$0.00</div>
             <div class="stat-sub" id="statApiTokens">0 tokens</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Dev Truyền Thống</div>
+            <div class="stat-label" id="txtStatHumanCost">Dev Truyền Thống</div>
             <div class="stat-val" id="statHumanCost">$0</div>
             <div class="stat-sub" id="statHumanHours">0h @ $25/h</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Active Coding Time</div>
+            <div class="stat-label" id="txtStatActiveTime">Active Coding Time</div>
             <div class="stat-val" id="statActiveTime">0s</div>
             <div class="stat-sub" id="statSessions">0 sessions</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Tiết Kiệm Ngân Sách</div>
+            <div class="stat-label" id="txtStatSavings">Tiết Kiệm Ngân Sách</div>
             <div class="stat-val" style="color: var(--success);" id="statSavings">$0</div>
             <div class="stat-sub" id="statSavingsPct">0% tiết kiệm</div>
         </div>
@@ -536,32 +546,39 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
 
     <!-- Pricing / Valuation Settings -->
     <div class="section-title">
-        <span>⚙️ Tham Số Định Giá</span>
+        <span id="txtValParamsTitle">⚙️ Tham Số Định Giá</span>
     </div>
     <div class="controls-card">
         <div class="form-group">
-            <span class="form-label">Tiền tệ</span>
+            <span class="form-label" id="txtLangLabel">Ngôn ngữ</span>
+            <select class="form-select" id="selectLanguage">
+                <option value="vi">🇻🇳 Tiếng Việt</option>
+                <option value="en">🇬🇧 English</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <span class="form-label" id="txtCurrLabel">Tiền tệ</span>
             <select class="form-select" id="selectCurrency">
                 <option value="USD">USD ($)</option>
                 <option value="VND">VND (₫)</option>
             </select>
         </div>
         <div class="form-group">
-            <span class="form-label">Markup Multiplier</span>
+            <span class="form-label" id="txtMarkupLabel">Markup Multiplier</span>
             <input class="form-input" type="number" step="0.1" min="1" max="10" id="inputMarkup" value="2.5" />
         </div>
         <div class="form-group">
-            <span class="form-label">Dev Hourly Rate ($)</span>
+            <span class="form-label" id="txtHourlyRateLabel">Dev Hourly Rate ($)</span>
             <input class="form-input" type="number" step="1" min="5" max="200" id="inputHourlyRate" value="25" />
         </div>
     </div>
 
     <!-- Models Breakdown -->
     <div class="section-title">
-        <span>🤖 Tỷ Lệ AI Models</span>
+        <span id="txtModelsTitle">🤖 Tỷ Lệ AI Models</span>
     </div>
     <div class="model-list" id="modelList">
-        <div class="empty-state">Đang tải dữ liệu...</div>
+        <div class="empty-state" id="txtModelEmpty">Đang tải dữ liệu...</div>
     </div>
 
     <!-- Actions -->
@@ -573,8 +590,8 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
     <!-- Tabs for Sessions vs Top Files -->
     <div style="margin-top: 18px;">
         <div class="tab-bar">
-            <div class="tab-item active" id="tabSessionsBtn">📝 Phiên Gần Đây (<span id="sessionCount">0</span>)</div>
-            <div class="tab-item" id="tabFilesBtn">📂 File Chi Phí Cao (<span id="fileCount">0</span>)</div>
+            <div class="tab-item active" id="tabSessionsBtn">📝 <span id="txtTabSessions">Phiên Gần Đây</span> (<span id="sessionCount">0</span>)</div>
+            <div class="tab-item" id="tabFilesBtn">📂 <span id="txtTabFiles">File Chi Phí Cao</span> (<span id="fileCount">0</span>)</div>
         </div>
         <div id="tabSessionsContent">
             <div id="sessionList"></div>
@@ -588,6 +605,7 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
         const vscode = acquireVsCodeApi();
         let currentFilter = 'all';
         let currentSelectedWs = '';
+        let i18nDict = {};
 
         function formatNumber(num) {
             return new Intl.NumberFormat('en-US').format(Math.round(num));
@@ -606,6 +624,7 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
         window.addEventListener('message', event => {
             const message = event.data;
             if (message.type === 'update') {
+                i18nDict = message.translations || {};
                 render(message.report, message.config);
             }
         });
@@ -613,7 +632,41 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
         function render(report, config) {
             if (!report) return;
 
+            const lang = config.language || 'vi';
+            const t = (i18nDict[lang]) || (i18nDict.vi) || {};
+            const isEn = lang === 'en';
             const isVnd = config.currency === 'VND';
+
+            // Cập nhật text đa ngôn ngữ
+            document.getElementById('txtHeaderTitle').innerText = t.dashboardTitle || '✨ AI Project Cost';
+            document.getElementById('btnRefresh').title = t.refreshTooltip || 'Làm mới';
+            document.getElementById('btnSettings').title = t.settingsTooltip || 'Cài đặt';
+
+            document.getElementById('pillAll').innerText = t.allTime || 'Tất cả';
+            document.getElementById('pillToday').innerText = t.today || 'Hôm nay';
+            document.getElementById('pill7d').innerText = t.last7Days || '7 ngày';
+            document.getElementById('pill30d').innerText = t.last30Days || '30 ngày';
+
+            document.getElementById('txtValHeroLabel').innerText = t.valuationHeroLabel || 'Định Giá Hoàn Thành Đề Xuất';
+            document.getElementById('txtStatApiCost').innerText = t.statApiCost || 'Chi Phí AI Token';
+            document.getElementById('txtStatHumanCost').innerText = t.statHumanCost || 'Dev Truyền Thống';
+            document.getElementById('txtStatActiveTime').innerText = t.statActiveTime || 'Active Coding Time';
+            document.getElementById('txtStatSavings').innerText = t.statSavings || 'Tiết Kiệm Ngân Sách';
+
+            document.getElementById('txtValParamsTitle').innerText = t.valuationParamsTitle || '⚙️ Tham Số Định Giá';
+            document.getElementById('txtLangLabel').innerText = t.languageLabel || 'Ngôn ngữ';
+            document.getElementById('txtCurrLabel').innerText = t.currencyLabel || 'Tiền tệ';
+            document.getElementById('txtMarkupLabel').innerText = t.markupLabel || 'Markup Multiplier';
+            document.getElementById('txtHourlyRateLabel').innerText = t.hourlyRateLabel || 'Dev Hourly Rate ($)';
+
+            document.getElementById('txtModelsTitle').innerText = t.modelsBreakdownTitle || '🤖 Tỷ Lệ AI Models';
+            document.getElementById('btnExportMd').innerText = t.exportMarkdownBtn || '📄 Xuất Markdown';
+            document.getElementById('btnExportHtml').innerText = t.exportHtmlBtn || '🌐 Xuất HTML / In';
+            document.getElementById('txtTabSessions').innerText = t.tabSessionsTitle || 'Phiên Gần Đây';
+            document.getElementById('txtTabFiles').innerText = t.tabFilesTitle || 'File Chi Phí Cao';
+
+            // Select inputs value update
+            document.getElementById('selectLanguage').value = lang;
             document.getElementById('selectCurrency').value = config.currency;
             document.getElementById('inputMarkup').value = config.markupMultiplier;
             document.getElementById('inputHourlyRate').value = config.humanHourlyRate;
@@ -621,8 +674,10 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
             // Project Switcher populate
             const selectProject = document.getElementById('selectProject');
             if (report.allProjects && report.allProjects.length > 0) {
-                let optionsHtml = '<option value="CURRENT">📍 Dự án hiện tại (' + report.projectName + ')</option>';
-                optionsHtml += '<option value="ALL">🌐 Tất Cả Dự Án Trong Máy</option>';
+                const curPrefix = t.currentProjectPrefix || '📍 Dự án hiện tại';
+                const allOpt = t.allProjectsOption || '🌐 Tất Cả Dự Án Trong Máy';
+                let optionsHtml = '<option value="CURRENT">' + curPrefix + ' (' + report.projectName + ')</option>';
+                optionsHtml += '<option value="ALL">' + allOpt + '</option>';
                 for (const p of report.allProjects) {
                     const pCost = isVnd ? formatNumber(p.totalCostVND) + ' ₫' : '$' + p.totalCostUSD.toFixed(2);
                     optionsHtml += '<option value="' + p.workspacePath + '">' + p.projectName + ' (' + pCost + ')</option>';
@@ -647,7 +702,8 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
                 ? formatNumber(report.valuation.recommendedValuationVND) + ' ₫'
                 : '$' + report.valuation.recommendedValuationUSD.toFixed(2);
             document.getElementById('valRecommended').innerText = recVal;
-            document.getElementById('valSub').innerText = 'Markup x' + report.valuation.markupMultiplier + ' + Công vận hành AI';
+            const subTemplate = t.valuationHeroSub || 'Markup x{markup} + Công vận hành AI';
+            document.getElementById('valSub').innerText = subTemplate.replace('{markup}', report.valuation.markupMultiplier);
 
             // Stats
             document.getElementById('statApiCost').innerText = isVnd
@@ -661,7 +717,9 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
             document.getElementById('statHumanHours').innerText = report.valuation.humanHoursEquivalent + 'h @ $' + report.valuation.humanHourlyRate + '/h';
 
             document.getElementById('statActiveTime').innerText = formatDuration(report.activeDurationSeconds);
-            document.getElementById('statSessions').innerText = report.totalSessions + ' sessions (' + report.totalTurns + ' turns)';
+            const sessSuffix = t.sessionsCountSuffix || 'sessions';
+            const turnsSuffix = t.turnsCountSuffix || 'turns';
+            document.getElementById('statSessions').innerText = report.totalSessions + ' ' + sessSuffix + ' (' + report.totalTurns + ' ' + turnsSuffix + ')';
 
             const savingsVal = isVnd
                 ? formatNumber(report.valuation.savingsVND) + ' ₫'
@@ -670,12 +728,13 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
                 ? Math.round((report.valuation.savingsUSD / report.valuation.humanCostEquivalentUSD) * 100)
                 : 0;
             document.getElementById('statSavings').innerText = savingsVal;
-            document.getElementById('statSavingsPct').innerText = savingsPct + '% tiết kiệm';
+            const savTemplate = t.statSavingsPct || '{pct}% tiết kiệm';
+            document.getElementById('statSavingsPct').innerText = savTemplate.replace('{pct}', savingsPct);
 
             // Render Models
             const modelListEl = document.getElementById('modelList');
             if (!report.models || report.models.length === 0) {
-                modelListEl.innerHTML = '<div class="empty-state">Chưa phát hiện dữ liệu model trong bộ lọc này.</div>';
+                modelListEl.innerHTML = '<div class="empty-state">' + (t.noModelData || 'Chưa có dữ liệu.') + '</div>';
             } else {
                 modelListEl.innerHTML = report.models.map(m => {
                     const provClass = m.provider ? m.provider.toLowerCase() : 'other';
@@ -701,7 +760,7 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
             const sessionListEl = document.getElementById('sessionList');
             document.getElementById('sessionCount').innerText = report.sessions ? report.sessions.length : 0;
             if (!report.sessions || report.sessions.length === 0) {
-                sessionListEl.innerHTML = '<div class="empty-state">Chưa có session nào.</div>';
+                sessionListEl.innerHTML = '<div class="empty-state">' + (t.noSessionData || 'Chưa có session.') + '</div>';
             } else {
                 sessionListEl.innerHTML = report.sessions.slice(0, 15).map(s => {
                     const costDisplay = isVnd ? formatNumber(s.costVND) + ' ₫' : '$' + s.costUSD.toFixed(3);
@@ -721,15 +780,16 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
             const fileListEl = document.getElementById('fileList');
             document.getElementById('fileCount').innerText = report.topFiles ? report.topFiles.length : 0;
             if (!report.topFiles || report.topFiles.length === 0) {
-                fileListEl.innerHTML = '<div class="empty-state">Chưa có dữ liệu file.</div>';
+                fileListEl.innerHTML = '<div class="empty-state">' + (t.noFileData || 'Chưa có file.') + '</div>';
             } else {
+                const touchesSuffix = t.touchesSuffix || 'lần sửa';
                 fileListEl.innerHTML = report.topFiles.slice(0, 15).map(f => {
                     const costDisplay = isVnd ? formatNumber(Math.round(f.estimatedCostUSD * config.vndExchangeRate)) + ' ₫' : '$' + f.estimatedCostUSD.toFixed(3);
                     return \`
                     <div class="list-item">
                         <div class="list-title" title="\${f.filePath}">\${f.fileName}</div>
                         <div class="list-meta">
-                            <span>\${f.touchesCount} lần sửa • ~\${formatNumber(f.estimatedTokens)} tok</span>
+                            <span>\${f.touchesCount} \${touchesSuffix} • ~\${formatNumber(f.estimatedTokens)} tok</span>
                             <strong>\${costDisplay}</strong>
                         </div>
                     </div>
@@ -801,6 +861,13 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
 
         document.getElementById('btnExportHtml').addEventListener('click', () => {
             vscode.postMessage({ type: 'exportReport', format: 'html' });
+        });
+
+        document.getElementById('selectLanguage').addEventListener('change', (e) => {
+            vscode.postMessage({
+                type: 'updateConfig',
+                config: { language: e.target.value }
+            });
         });
 
         document.getElementById('selectCurrency').addEventListener('change', (e) => {

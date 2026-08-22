@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ProjectCostReport, PricingConfig } from '../types';
 import { ReportGenerator } from '../engine/reportGenerator';
+import { getTranslation } from '../i18n';
 
 export class StatusBarManager {
     private statusBarItem: vscode.StatusBarItem;
@@ -8,7 +9,7 @@ export class StatusBarManager {
     constructor() {
         this.statusBarItem = vscode.window.createStatusBarItem(
             vscode.StatusBarAlignment.Right,
-            95 // Đặt ngay cạnh Auto Quota
+            95
         );
         this.statusBarItem.command = 'antigravity-cost.menu';
         this.statusBarItem.text = '$(sparkle) AI Cost: Scanning...';
@@ -17,9 +18,12 @@ export class StatusBarManager {
     }
 
     public update(report: ProjectCostReport | null, config: PricingConfig) {
+        const t = getTranslation(config.language);
+        const isEn = config.language === 'en';
+
         if (!report || report.totalSessions === 0) {
             this.statusBarItem.text = '$(sparkle) AI Cost: $0.00';
-            this.statusBarItem.tooltip = new vscode.MarkdownString('Chưa phát hiện phiên làm việc AI nào trong workspace này.');
+            this.statusBarItem.tooltip = new vscode.MarkdownString(t.noSessionsFound);
             return;
         }
 
@@ -36,22 +40,39 @@ export class StatusBarManager {
 
         this.statusBarItem.text = `$(sparkle) ${costStr} (${tokStr} tok)`;
 
-        // Tooltip phong phú với Markdown
+        // Tooltip phong phú với Markdown song ngữ
         const tooltip = new vscode.MarkdownString();
         tooltip.isTrusted = true;
-        tooltip.appendMarkdown(`### 📊 **Antigravity AI Cost & Valuation**\n\n`);
-        tooltip.appendMarkdown(`- **Chi phí AI Token:** \`$${report.totalCostUSD.toFixed(4)}\` (~${ReportGenerator.formatNumber(report.totalCostVND)} ₫)\n`);
-        tooltip.appendMarkdown(`- **Định giá đề xuất:** \`$${report.valuation.recommendedValuationUSD.toFixed(2)}\` (~${ReportGenerator.formatNumber(report.valuation.recommendedValuationVND)} ₫)\n`);
-        tooltip.appendMarkdown(`- **Tổng Tokens:** \`${ReportGenerator.formatNumber(report.totalTokens)}\` tokens\n`);
-        tooltip.appendMarkdown(`- **Active Coding Time:** \`${timeStr}\` (${report.totalSessions} sessions)\n\n`);
 
-        if (report.models.length > 0) {
-            tooltip.appendMarkdown(`**Models Sử Dụng:**\n`);
-            for (const m of report.models) {
-                tooltip.appendMarkdown(`- **${m.displayName}:** ${m.percentageOfCost}% ($${m.costUSD.toFixed(3)})\n`);
+        if (isEn) {
+            tooltip.appendMarkdown(`### 📊 **Antigravity AI Cost & Valuation**\n\n`);
+            tooltip.appendMarkdown(`- **AI Token Cost:** \`$${report.totalCostUSD.toFixed(4)}\` (~${ReportGenerator.formatNumber(report.totalCostVND)} ₫)\n`);
+            tooltip.appendMarkdown(`- **Recommended Valuation:** \`$${report.valuation.recommendedValuationUSD.toFixed(2)}\` (~${ReportGenerator.formatNumber(report.valuation.recommendedValuationVND)} ₫)\n`);
+            tooltip.appendMarkdown(`- **Total Tokens:** \`${ReportGenerator.formatNumber(report.totalTokens)}\` tokens\n`);
+            tooltip.appendMarkdown(`- **Active Coding Time:** \`${timeStr}\` (${report.totalSessions} sessions)\n\n`);
+
+            if (report.models.length > 0) {
+                tooltip.appendMarkdown(`**Models Used:**\n`);
+                for (const m of report.models) {
+                    tooltip.appendMarkdown(`- **${m.displayName}:** ${m.percentageOfCost}% ($${m.costUSD.toFixed(3)})\n`);
+                }
             }
+            tooltip.appendMarkdown(`\n*Click to open menu & export report.*`);
+        } else {
+            tooltip.appendMarkdown(`### 📊 **Antigravity AI Cost & Valuation**\n\n`);
+            tooltip.appendMarkdown(`- **Chi phí AI Token:** \`$${report.totalCostUSD.toFixed(4)}\` (~${ReportGenerator.formatNumber(report.totalCostVND)} ₫)\n`);
+            tooltip.appendMarkdown(`- **Định giá đề xuất:** \`$${report.valuation.recommendedValuationUSD.toFixed(2)}\` (~${ReportGenerator.formatNumber(report.valuation.recommendedValuationVND)} ₫)\n`);
+            tooltip.appendMarkdown(`- **Tổng Tokens:** \`${ReportGenerator.formatNumber(report.totalTokens)}\` tokens\n`);
+            tooltip.appendMarkdown(`- **Active Coding Time:** \`${timeStr}\` (${report.totalSessions} sessions)\n\n`);
+
+            if (report.models.length > 0) {
+                tooltip.appendMarkdown(`**Models Sử Dụng:**\n`);
+                for (const m of report.models) {
+                    tooltip.appendMarkdown(`- **${m.displayName}:** ${m.percentageOfCost}% ($${m.costUSD.toFixed(3)})\n`);
+                }
+            }
+            tooltip.appendMarkdown(`\n*Nhấp để mở menu quản lý & xuất báo cáo.*`);
         }
-        tooltip.appendMarkdown(`\n*Nhấp để mở menu quản lý & xuất báo cáo.*`);
 
         this.statusBarItem.tooltip = tooltip;
     }
