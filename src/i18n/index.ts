@@ -56,6 +56,8 @@ export const TRANSLATIONS = {
         menuExportHtmlDesc: 'Tạo file PROJECT_VALUATION_REPORT.html để in',
         menuToggleCurrency: '$(symbol-unit) Đổi Tiền Tệ (USD / VND)',
         menuToggleLanguage: '$(globe) Đổi Ngôn Ngữ / Switch Language',
+        menuCheckUpdate: '$(cloud-download) Kiểm tra phiên bản mới',
+        menuCheckUpdateDesc: 'Kiểm tra bản cập nhật mới nhất từ GitHub Releases',
         menuSettings: '$(gear) Cài đặt Định Giá & Tỷ Giá',
         menuSettingsDesc: 'Chỉnh Markup, Tỷ giá VND, Dev rate, Ngôn ngữ'
     },
@@ -114,6 +116,8 @@ export const TRANSLATIONS = {
         menuExportHtmlDesc: 'Generate PROJECT_VALUATION_REPORT.html for printing',
         menuToggleCurrency: '$(symbol-unit) Switch Currency (USD / VND)',
         menuToggleLanguage: '$(globe) Switch Language / Đổi Ngôn Ngữ',
+        menuCheckUpdate: '$(cloud-download) Check for Updates',
+        menuCheckUpdateDesc: 'Check for the latest release on GitHub',
         menuSettings: '$(gear) Extension Settings',
         menuSettingsDesc: 'Configure Markup, Exchange Rate, Hourly Rate, Language'
     }

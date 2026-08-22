@@ -130,6 +130,16 @@ async function runTestSuite() {
     const parsedJson = JSON.parse(jsonReport);
     assert(parsedJson.totalTokens === allReport.totalTokens, 'JSON xuất đầy đủ dữ liệu');
 
+    // 6. TEST UPDATER ENGINE
+    console.log('\n--- 6. Kiểm thử Updater Engine (So sánh phiên bản GitHub) ---');
+    const { isNewerVersion } = require('../src/utils/version');
+    assert(isNewerVersion('1.2.0', '1.3.0') === true, 'Phát hiện minor version mới (1.2.0 -> 1.3.0)');
+    assert(isNewerVersion('1.2.0', '1.2.1') === true, 'Phát hiện patch version mới (1.2.0 -> 1.2.1)');
+    assert(isNewerVersion('1.2.0', '2.0.0') === true, 'Phát hiện major version mới (1.2.0 -> 2.0.0)');
+    assert(isNewerVersion('1.2.0', '1.2.0') === false, 'Không báo update khi cùng version (1.2.0 == 1.2.0)');
+    assert(isNewerVersion('1.2.0', '1.1.9') === false, 'Không báo update khi version thấp hơn (1.2.0 > 1.1.9)');
+    assert(isNewerVersion('v1.2.0', 'v1.3.0') === true, 'Xử lý tiền tố v tốt (v1.2.0 -> v1.3.0)');
+
 
     // TỔNG KẾT
     console.log('\n====================================================');

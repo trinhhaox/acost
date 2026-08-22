@@ -8,6 +8,7 @@ import { ReportGenerator } from './engine/reportGenerator';
 import { StatusBarManager } from './providers/statusBarManager';
 import { CostSidebarProvider } from './providers/costSidebarProvider';
 import { getTranslation } from './i18n';
+import { checkForUpdates } from './updater';
 
 let scanner: LogScanner;
 let statusBar: StatusBarManager;
@@ -21,7 +22,6 @@ let currentDateFilter: 'all' | 'today' | '7d' | '30d' = 'all';
 
 function loadConfig(): PricingConfig {
     const wsConfig = vscode.workspace.getConfiguration('antigravityCost');
-    // Nếu chưa set language, kiểm tra xem UI VS Code có phải vi không
     const defaultLang = vscode.env.language.startsWith('vi') ? 'vi' : 'vi';
     return {
         language: wsConfig.get<'vi' | 'en'>('language', defaultLang),
@@ -184,6 +184,12 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
 
+    context.subscriptions.push(
+        vscode.commands.registerCommand('antigravity-cost.checkUpdate', async () => {
+            await checkForUpdates(context, currentConfig, true);
+        })
+    );
+
     // Quick Pick Menu song ngữ
     context.subscriptions.push(
         vscode.commands.registerCommand('antigravity-cost.menu', async () => {
@@ -194,6 +200,7 @@ export function activate(context: vscode.ExtensionContext) {
                 { id: 'refresh', label: t.menuRefresh, description: t.menuRefreshDesc },
                 { id: 'export_md', label: t.menuExportMd, description: t.menuExportMdDesc },
                 { id: 'export_html', label: t.menuExportHtml, description: t.menuExportHtmlDesc },
+                { id: 'check_update', label: t.menuCheckUpdate, description: t.menuCheckUpdateDesc },
                 { id: 'toggle_currency', label: t.menuToggleCurrency, description: `Current: ${currentConfig.currency}` },
                 { id: 'toggle_language', label: t.menuToggleLanguage, description: `Current: ${currentConfig.language === 'en' ? '🇬🇧 English' : '🇻🇳 Tiếng Việt'}` },
                 { id: 'settings', label: t.menuSettings, description: t.menuSettingsDesc }
@@ -217,6 +224,9 @@ export function activate(context: vscode.ExtensionContext) {
                     break;
                 case 'export_html':
                     await handleExportReport('html');
+                    break;
+                case 'check_update':
+                    await checkForUpdates(context, currentConfig, true);
                     break;
                 case 'toggle_currency': {
                     const newCurr = currentConfig.currency === 'USD' ? 'VND' : 'USD';
@@ -266,6 +276,14 @@ export function activate(context: vscode.ExtensionContext) {
     setTimeout(() => {
         performScan();
     }, 1000);
+
+    // Tự động kiểm tra cập nhật sau 3 giây khởi động
+    const autoCheck = vscode.workspace.getConfiguration('antigravityCost').get<boolean>('autoCheckUpdates', true);
+    if (autoCheck) {
+        setTimeout(() => {
+            checkForUpdates(context, currentConfig, false);
+        }, 3000);
+    }
 
     // Định kỳ quét cập nhật mỗi 60s
     refreshTimer = setInterval(() => {
