@@ -1,0 +1,135 @@
+{
+  "name": "antigravity-cost",
+  "displayName": "Antigravity Project AI Cost & Valuation",
+  "description": "Phân tích và định giá dự án: Đo lường model sử dụng, token tiêu thụ, thời gian coding và quy đổi chi phí AI trong Antigravity IDE",
+  "version": "1.1.0",
+  "publisher": "antigravity-tools",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Visualization",
+    "Education"
+  ],
+  "icon": "icon.png",
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "antigravity-cost-container",
+          "title": "Project AI Cost",
+          "icon": "icon.png"
+        }
+      ]
+    },
+    "views": {
+      "antigravity-cost-container": [
+        {
+          "type": "webview",
+          "id": "antigravity-cost.sidebar",
+          "name": "Project AI Valuation"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "antigravity-cost.refresh",
+        "title": "Làm mới dữ liệu chi phí",
+        "icon": "$(refresh)",
+        "category": "Antigravity Cost"
+      },
+      {
+        "command": "antigravity-cost.exportReport",
+        "title": "Xuất Báo Cáo Định Giá Dự Án (Markdown)",
+        "icon": "$(file-text)",
+        "category": "Antigravity Cost"
+      },
+      {
+        "command": "antigravity-cost.exportHtmlReport",
+        "title": "Xuất Báo Cáo Định Giá (HTML)",
+        "icon": "$(file-code)",
+        "category": "Antigravity Cost"
+      },
+      {
+        "command": "antigravity-cost.openDashboard",
+        "title": "Mở Dashboard Định Giá Chi Phí",
+        "icon": "$(dashboard)",
+        "category": "Antigravity Cost"
+      },
+      {
+        "command": "antigravity-cost.menu",
+        "title": "Menu Quản Lý Chi Phí",
+        "category": "Antigravity Cost"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "antigravity-cost.refresh",
+          "when": "view == antigravity-cost.sidebar",
+          "group": "navigation@1"
+        },
+        {
+          "command": "antigravity-cost.exportReport",
+          "when": "view == antigravity-cost.sidebar",
+          "group": "navigation@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Antigravity Cost & Valuation",
+      "properties": {
+        "antigravityCost.currency": {
+          "type": "string",
+          "enum": ["USD", "VND"],
+          "default": "USD",
+          "description": "Đơn vị tiền tệ chính hiển thị"
+        },
+        "antigravityCost.vndExchangeRate": {
+          "type": "number",
+          "default": 25500,
+          "description": "Tỷ giá quy đổi USD sang VND"
+        },
+        "antigravityCost.markupMultiplier": {
+          "type": "number",
+          "default": 2.5,
+          "description": "Hệ số nhân định giá dự án (Markup Multiplier trên chi phí AI)"
+        },
+        "antigravityCost.humanHourlyRate": {
+          "type": "number",
+          "default": 25,
+          "description": "Chi phí nhân công tương đương / giờ (USD) để tính chi phí thay thế dev truyền thống"
+        },
+        "antigravityCost.autoScanOnOpen": {
+          "type": "boolean",
+          "default": true,
+          "description": "Tự động quét và cập nhật chi phí dự án khi mở workspace"
+        },
+        "antigravityCost.customPricing": {
+          "type": "object",
+          "default": {},
+          "description": "Tùy chỉnh bảng giá cho các model cụ thể (dạng JSON)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "build": "node esbuild.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.24.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.3"
+  }
+}
