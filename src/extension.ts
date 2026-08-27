@@ -173,6 +173,11 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider('acost.sidebar', sidebarProvider)
     );
+    try {
+        context.subscriptions.push(
+            vscode.window.registerWebviewViewProvider('antigravity-cost.sidebar', sidebarProvider)
+        );
+    } catch (e) {}
 
     context.subscriptions.push(statusBar);
 

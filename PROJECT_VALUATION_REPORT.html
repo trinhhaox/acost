@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo Cáo Định Giá Dự Án - acost</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #38bdf8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --border: #334155;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 32px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border: 1px solid var(--border);
+            padding: 28px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        h1 { margin: 0 0 8px 0; color: #fff; font-size: 26px; }
+        .meta { color: var(--text-muted); font-size: 14px; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .card-label { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .card-value { font-size: 24px; font-weight: bold; margin: 8px 0; color: var(--primary); }
+        .card-sub { font-size: 13px; color: var(--text-muted); }
+        .card.highlight { border-color: var(--success); background: linear-gradient(180deg, rgba(16, 185, 129, 0.1), var(--card-bg)); }
+        .card.highlight .card-value { color: var(--success); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0 32px 0;
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+        th { background: #182234; color: var(--text-muted); font-weight: 600; }
+        tr:last-child td { border-bottom: none; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; background: #334155; }
+        .badge.google { background: #1e3a8a; color: #93c5fd; }
+        .badge.anthropic { background: #78350f; color: #fde68a; }
+        .badge.openai { background: #064e3b; color: #6ee7b7; }
+        .btn-print { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; float: right; }
+        @media print {
+            body { background: #fff; color: #000; padding: 0; }
+            .btn-print { display: none; }
+            .card, table, .header { border-color: #ddd; background: #fff; color: #000; box-shadow: none; }
+            .card-value { color: #0284c7; }
+            th { background: #f1f5f9; color: #333; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="btn-print" onclick="window.print()">🖨️ In / Xuất PDF</button>
+            <h1>📊 Báo Cáo Định Giá & Chi Phí Lập Trình AI</h1>
+            <div class="meta">
+                Dự án: <strong>acost</strong> | Workspace: <code>/Volumes/Hao512gb/Antigravity/acost</code><br>
+                Ngày tạo: 03:35:00 28/8/2026
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <div class="card-label">Chi Phí AI Token Thực Tế</div>
+                <div class="card-value">$0.07</div>
+                <div class="card-sub">1,711 ₫</div>
+            </div>
+            <div class="card highlight">
+                <div class="card-label">Định Giá Đề Xuất (Valuation)</div>
+                <div class="card-value">$15.23</div>
+                <div class="card-sub">388,365 ₫ (x2.5 Markup)</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Dev Truyền Thống Tương Đương</div>
+                <div class="card-value">$208</div>
+                <div class="card-sub">8.3h @ $25/h</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Tổng Tokens Tiêu Thụ</div>
+                <div class="card-value">195,570</div>
+                <div class="card-sub">Active Time: 32m 16s</div>
+            </div>
+        </div>
+
+        <h2>🤖 Phân Bổ Theo AI Models</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>AI Model</th>
+                    <th>Nhà Cung Cấp</th>
+                    <th>Input Tokens</th>
+                    <th>Output Tokens</th>
+                    <th>Thinking Tokens</th>
+                    <th>Chi Phí (USD)</th>
+                    <th>Tỷ Lệ</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td><strong>Gemini 3.7 Flash</strong></td>
+                    <td><span class="badge google">Google</span></td>
+                    <td>82,726</td>
+                    <td>69,463</td>
+                    <td>5,620</td>
+                    <td>$0.0575</td>
+                    <td><strong>85.7%</strong></td>
+                </tr>
+                
+                <tr>
+                    <td><strong>Gemini 3.5 Flash</strong></td>
+                    <td><span class="badge google">Google</span></td>
+                    <td>17,349</td>
+                    <td>9,730</td>
+                    <td>1,542</td>
+                    <td>$0.0062</td>
+                    <td><strong>9.2%</strong></td>
+                </tr>
+                
+                <tr>
+                    <td><strong>Gemini 3.6 Flash</strong></td>
+                    <td><span class="badge google">Google</span></td>
+                    <td>4,694</td>
+                    <td>4,133</td>
+                    <td>313</td>
+                    <td>$0.0034</td>
+                    <td><strong>5.1%</strong></td>
+                </tr>
+                
+            </tbody>
+        </table>
+
+        <h2>📝 Chi Tiết Các Phiên Làm Việc (Sessions)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Thời Gian</th>
+                    <th>Yêu Cầu / Prompt</th>
+                    <th>AI Model</th>
+                    <th>Tokens</th>
+                    <th>Thời Lượng</th>
+                    <th>Chi Phí (USD)</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td>03:13:58 28/8/2026</td>
+                    <td>Đổi tên dự án thành Acost</td>
+                    <td>gemini-3.7-flash</td>
+                    <td>157,809</td>
+                    <td>20m 59s</td>
+                    <td>$0.0575</td>
+                </tr>
+                
+                <tr>
+                    <td>21:33:34 28/7/2026</td>
+                    <td>Phân tích repo https://github.com/citrolabs/ego-lite</td>
+                    <td>gemini-3.6-flash</td>
+                    <td>9,140</td>
+                    <td>5m 21s</td>
+                    <td>$0.0034</td>
+                </tr>
+                
+                <tr>
+                    <td>14:27:30 19/7/2026</td>
+                    <td>Phân tích repo và cài đặt https://github.com/mukul975/Anthropic-Cybersecurity-Sk</td>
+                    <td>gemini-3.5-flash</td>
+                    <td>28,621</td>
+                    <td>5m 56s</td>
+                    <td>$0.0062</td>
+                </tr>
+                
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
