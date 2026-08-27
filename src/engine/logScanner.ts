@@ -502,8 +502,9 @@ export class LogScanner {
         const cleanTarget = cleanPath(normTarget);
 
         if (normSession === normTarget || cleanSession === cleanTarget) return true;
-        if (cleanSession.startsWith(cleanTarget + path.sep) || cleanTarget.startsWith(cleanSession + path.sep)) return true;
-        if (normSession.startsWith(normTarget + path.sep) || normTarget.startsWith(normSession + path.sep)) return true;
+        // Chỉ chấp nhận nếu session nằm trong subfolder của target workspace (không lấy chiều ngược lại)
+        if (cleanSession.startsWith(cleanTarget + path.sep)) return true;
+        if (normSession.startsWith(normTarget + path.sep)) return true;
 
         const baseSession = path.basename(normSession);
         const baseTarget = path.basename(normTarget);
