@@ -294,7 +294,7 @@ export function activate(context: vscode.ExtensionContext) {
         performScan();
     }, 1000);
 
-    // Tự động kiểm tra cập nhật sau 3 giây khởi động
+    // Tự động kiểm tra cập nhật sau 3 giây khởi động & định kỳ mỗi 2 giờ
     const autoCheck = vscode.workspace.getConfiguration('acost').get<boolean>('autoCheckUpdates',
         vscode.workspace.getConfiguration('antigravityCost').get<boolean>('autoCheckUpdates', true)
     );
@@ -302,9 +302,18 @@ export function activate(context: vscode.ExtensionContext) {
         setTimeout(() => {
             checkForUpdates(context, currentConfig, false);
         }, 3000);
+
+        // Định kỳ kiểm tra cập nhật mỗi 2 giờ
+        const updateCheckInterval = 2 * 60 * 60 * 1000;
+        const updateTimer = setInterval(() => {
+            checkForUpdates(context, currentConfig, false);
+        }, updateCheckInterval);
+        context.subscriptions.push({
+            dispose: () => clearInterval(updateTimer)
+        });
     }
 
-    // Định kỳ quét cập nhật mỗi 60s
+    // Định kỳ quét logs mỗi 60s
     refreshTimer = setInterval(() => {
         performScan();
     }, 60000);

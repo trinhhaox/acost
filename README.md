@@ -46,6 +46,29 @@ Mở Settings (`Cmd+,`) và tìm `acost`:
 
 ---
 
-## 📋 Báo Cáo Định Giá Mẫu
-Khi xuất báo cáo (`acost.exportReport`), extension sẽ tạo file `PROJECT_VALUATION_REPORT.md` ngay tại thư mục gốc dự án chứa đầy đủ bảng số liệu chi tiết, tỷ lệ phần trăm từng model và bảng phân tích tiết kiệm chi phí.
+## 🔄 Cơ Chế Tự Động Cập Nhật (Auto-Update)
+
+Extension được tích hợp sẵn hệ thống kiểm tra và thông báo phiên bản mới tự động:
+1. **Khi người dùng mở IDE:** Extension tự động kiểm tra bản phát hành mới nhất từ GitHub Releases sau 3 giây và định kỳ mỗi 2 giờ.
+2. **Khi có bản cập nhật:**
+   - Người dùng sẽ nhận được popup thông báo: `🚀 Đã có phiên bản mới Acost vX.X.X! Bạn có muốn cập nhật ngay không?`.
+   - Cung cấp nút **`⚡ 1-Click Update`** để extension tự động tải file VSIX từ GitHub về và cài đặt trực tiếp không cần thao tác thủ công.
+
+### 📦 Quy Trình Phát Hành Phiên Bản Mới (Dành Cho Tác Giả):
+1. Tăng version trong `package.json` (ví dụ `1.3.1`).
+2. Build và đóng gói file VSIX:
+   ```bash
+   npm run build
+   npx @vscode/vsce package --allow-missing-repository
+   ```
+3. Commit, gắn tag và push lên GitHub:
+   ```bash
+   git add -A
+   git commit -m "release: v1.3.1"
+   git tag v1.3.1
+   git push origin main --tags
+   ```
+4. Truy cập **[GitHub Releases](https://github.com/trinhhaox/acost/releases)** -> Tạo **New Release** với tag `v1.3.1` và tải đính kèm file `acost-1.3.1.vsix`.
+5. Tất cả người dùng đã cài đặt extension sẽ nhận được thông báo cập nhật tự động ngay trong IDE!
+
 
