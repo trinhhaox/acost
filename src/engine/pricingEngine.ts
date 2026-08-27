@@ -60,12 +60,26 @@ export const DEFAULT_MODEL_PRICING: Record<string, ModelPricing> = {
     },
 
     // Anthropic Claude Models
-    'claude-sonnet-4.6': {
-        displayName: 'Claude Sonnet 4.6 (Thinking)',
+    'claude-opus-5': {
+        displayName: 'Claude Opus 5',
         provider: 'Anthropic',
-        inputPricePerMillion: 3.00,
-        outputPricePerMillion: 15.00,
-        cacheReadPricePerMillion: 0.30
+        inputPricePerMillion: 15.00,
+        outputPricePerMillion: 75.00,
+        cacheReadPricePerMillion: 1.50
+    },
+    'claude-opus-4.8': {
+        displayName: 'Claude Opus 4.8',
+        provider: 'Anthropic',
+        inputPricePerMillion: 15.00,
+        outputPricePerMillion: 75.00,
+        cacheReadPricePerMillion: 1.50
+    },
+    'claude-opus-4.7': {
+        displayName: 'Claude Opus 4.7',
+        provider: 'Anthropic',
+        inputPricePerMillion: 15.00,
+        outputPricePerMillion: 75.00,
+        cacheReadPricePerMillion: 1.50
     },
     'claude-opus-4.6': {
         displayName: 'Claude Opus 4.6 (Thinking)',
@@ -73,6 +87,27 @@ export const DEFAULT_MODEL_PRICING: Record<string, ModelPricing> = {
         inputPricePerMillion: 15.00,
         outputPricePerMillion: 75.00,
         cacheReadPricePerMillion: 1.50
+    },
+    'claude-3-opus': {
+        displayName: 'Claude 3 Opus',
+        provider: 'Anthropic',
+        inputPricePerMillion: 15.00,
+        outputPricePerMillion: 75.00,
+        cacheReadPricePerMillion: 1.50
+    },
+    'claude-sonnet-4.6': {
+        displayName: 'Claude Sonnet 4.6 (Thinking)',
+        provider: 'Anthropic',
+        inputPricePerMillion: 3.00,
+        outputPricePerMillion: 15.00,
+        cacheReadPricePerMillion: 0.30
+    },
+    'claude-sonnet-4.5': {
+        displayName: 'Claude Sonnet 4.5',
+        provider: 'Anthropic',
+        inputPricePerMillion: 3.00,
+        outputPricePerMillion: 15.00,
+        cacheReadPricePerMillion: 0.30
     },
     'claude-3.7-sonnet': {
         displayName: 'Claude 3.7 Sonnet',
@@ -88,6 +123,13 @@ export const DEFAULT_MODEL_PRICING: Record<string, ModelPricing> = {
         outputPricePerMillion: 15.00,
         cacheReadPricePerMillion: 0.30
     },
+    'claude-haiku-4.5': {
+        displayName: 'Claude Haiku 4.5',
+        provider: 'Anthropic',
+        inputPricePerMillion: 0.80,
+        outputPricePerMillion: 4.00,
+        cacheReadPricePerMillion: 0.08
+    },
     'claude-3.5-haiku': {
         displayName: 'Claude 3.5 Haiku',
         provider: 'Anthropic',
@@ -95,12 +137,12 @@ export const DEFAULT_MODEL_PRICING: Record<string, ModelPricing> = {
         outputPricePerMillion: 4.00,
         cacheReadPricePerMillion: 0.08
     },
-    'claude-3-opus': {
-        displayName: 'Claude 3 Opus',
+    'claude-fable-5': {
+        displayName: 'Claude Fable 5',
         provider: 'Anthropic',
-        inputPricePerMillion: 15.00,
-        outputPricePerMillion: 75.00,
-        cacheReadPricePerMillion: 1.50
+        inputPricePerMillion: 3.00,
+        outputPricePerMillion: 15.00,
+        cacheReadPricePerMillion: 0.30
     },
 
     // OpenAI Models
@@ -186,17 +228,26 @@ export class PricingEngine {
         if (lower.includes('1.5') && lower.includes('pro')) return 'gemini-1.5-pro';
         if (lower.includes('1.5') && lower.includes('flash')) return 'gemini-1.5-flash';
 
-        // Claude
-        if (lower.includes('claude') && lower.includes('sonnet') && lower.includes('4.6')) return 'claude-sonnet-4.6';
-        if (lower.includes('claude') && lower.includes('opus') && lower.includes('4.6')) return 'claude-opus-4.6';
-        if (lower.includes('claude') && lower.includes('3.7') && lower.includes('sonnet')) return 'claude-3.7-sonnet';
-        if (lower.includes('claude-3-7-sonnet')) return 'claude-3.7-sonnet';
-        if (lower.includes('claude') && lower.includes('3.5') && lower.includes('sonnet')) return 'claude-3.5-sonnet';
-        if (lower.includes('claude-3-5-sonnet')) return 'claude-3.5-sonnet';
-        if (lower.includes('claude') && lower.includes('haiku')) return 'claude-3.5-haiku';
-        if (lower.includes('claude-haiku')) return 'claude-3.5-haiku';
+        // Claude Specific Versions
+        if (lower.includes('claude-opus-5') || lower.includes('opus-5')) return 'claude-opus-5';
+        if (lower.includes('claude-opus-4-8') || lower.includes('claude-opus-4.8')) return 'claude-opus-4.8';
+        if (lower.includes('claude-opus-4-7') || lower.includes('claude-opus-4.7')) return 'claude-opus-4.7';
+        if (lower.includes('claude-opus-4-6') || lower.includes('claude-opus-4.6') || (lower.includes('opus') && lower.includes('4.6'))) return 'claude-opus-4.6';
+        if (lower.includes('claude-3-opus') || lower.includes('claude-3.0-opus')) return 'claude-3-opus';
+
+        if (lower.includes('claude-sonnet-4-6') || lower.includes('claude-sonnet-4.6') || (lower.includes('sonnet') && lower.includes('4.6'))) return 'claude-sonnet-4.6';
+        if (lower.includes('claude-sonnet-4-5') || lower.includes('claude-sonnet-4.5') || (lower.includes('sonnet') && lower.includes('4.5'))) return 'claude-sonnet-4.5';
+        if (lower.includes('claude-3-7-sonnet') || lower.includes('claude-3.7-sonnet') || (lower.includes('sonnet') && lower.includes('3.7'))) return 'claude-3.7-sonnet';
+        if (lower.includes('claude-3-5-sonnet') || lower.includes('claude-3.5-sonnet') || (lower.includes('sonnet') && lower.includes('3.5'))) return 'claude-3.5-sonnet';
+
+        if (lower.includes('claude-haiku-4-5') || lower.includes('claude-haiku-4.5') || (lower.includes('haiku') && lower.includes('4.5'))) return 'claude-haiku-4.5';
+        if (lower.includes('claude-3-5-haiku') || lower.includes('claude-3.5-haiku') || lower.includes('claude-haiku')) return 'claude-3.5-haiku';
+
+        if (lower.includes('claude-fable-5') || lower.includes('fable')) return 'claude-fable-5';
+
         if (lower.includes('claude') && lower.includes('opus')) return 'claude-3-opus';
-        if (lower.includes('claude-3-opus')) return 'claude-3-opus';
+        if (lower.includes('claude') && lower.includes('sonnet')) return 'claude-3.7-sonnet';
+        if (lower.includes('claude') && lower.includes('haiku')) return 'claude-3.5-haiku';
 
         // OpenAI
         if (lower.includes('gpt-4o-mini') || lower.includes('4o-mini')) return 'gpt-4o-mini';

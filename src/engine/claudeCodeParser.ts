@@ -104,17 +104,25 @@ export class ClaudeCodeParser {
 
                 // 4. Model & Token Usage
                 if (obj.message) {
+                    let turnModel = currentModel;
                     if (obj.message.model && obj.message.model !== '<synthetic>') {
                         const normModel = this.pricingEngine.normalizeModelKey(obj.message.model);
+                        turnModel = normModel;
                         currentModel = normModel;
-                        modelsUsedSet.add(normModel);
                     }
 
                     if (obj.message.usage) {
-                        inputTokens += obj.message.usage.input_tokens || 0;
-                        outputTokens += obj.message.usage.output_tokens || 0;
-                        cacheCreationTokens += obj.message.usage.cache_creation_input_tokens || 0;
-                        cacheReadTokens += obj.message.usage.cache_read_input_tokens || 0;
+                        const inTok = obj.message.usage.input_tokens || 0;
+                        const outTok = obj.message.usage.output_tokens || 0;
+                        const ccTok = obj.message.usage.cache_creation_input_tokens || 0;
+                        const crTok = obj.message.usage.cache_read_input_tokens || 0;
+
+                        inputTokens += inTok;
+                        outputTokens += outTok;
+                        cacheCreationTokens += ccTok;
+                        cacheReadTokens += crTok;
+
+                        modelsUsedSet.add(turnModel);
                     }
                 }
 
@@ -173,7 +181,19 @@ export class ClaudeCodeParser {
 
         const finalActiveTime = Math.min(durationSeconds, Math.max(10, Math.round(activeTimeSeconds)));
 
-        const primaryModel = Array.from(modelsUsedSet)[0] || 'claude-3.7-sonnet';
+        // Chọn primary model ưu tiên Opus / Sonnet trước Haiku nếu có nhiều models
+        const modelsList = Array.from(modelsUsedSet);
+        let primaryModel = modelsList[0] || 'claude-sonnet-4.5';
+        for (const m of modelsList) {
+            if (m.includes('opus')) {
+                primaryModel = m;
+                break;
+            }
+            if (m.includes('sonnet')) {
+                primaryModel = m;
+            }
+        }
+
         const costUSD = this.pricingEngine.calculateCostUSD(
             primaryModel,
             inputTokens,
@@ -192,7 +212,7 @@ export class ClaudeCodeParser {
             endTime: lastTimestamp ? new Date(lastTimestamp).toISOString() : new Date().toISOString(),
             durationSeconds,
             activeTimeSeconds: finalActiveTime,
-            modelsUsed: Array.from(modelsUsedSet),
+            modelsUsed: modelsList,
             turnsCount: Math.max(1, turnsCount),
             inputTokens,
             outputTokens,

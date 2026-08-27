@@ -275,12 +275,21 @@ export class LogScanner {
 
     private isWorkspaceMatch(sessionWs: string, targetWs: string): boolean {
         if (!sessionWs || !targetWs) return false;
-        const normSession = path.normalize(sessionWs).toLowerCase();
-        const normTarget = path.normalize(targetWs).toLowerCase();
+        let normSession = path.normalize(sessionWs).toLowerCase();
+        let normTarget = path.normalize(targetWs).toLowerCase();
 
-        if (normSession === normTarget) return true;
-        if (normSession.startsWith(normTarget + path.sep)) return true;
-        if (normTarget.startsWith(normSession + path.sep)) return true;
+        // Chuẩn hóa mount drive /Volumes/.../Antigravity <-> /Users/.../Antigravity
+        const cleanPath = (p: string) => {
+            return p.replace(/^\/volumes\/[^\/]+\/antigravity/, '/antigravity')
+                    .replace(/^\/users\/[^\/]+\/antigravity/, '/antigravity');
+        };
+
+        const cleanSession = cleanPath(normSession);
+        const cleanTarget = cleanPath(normTarget);
+
+        if (normSession === normTarget || cleanSession === cleanTarget) return true;
+        if (cleanSession.startsWith(cleanTarget + path.sep) || cleanTarget.startsWith(cleanSession + path.sep)) return true;
+        if (normSession.startsWith(normTarget + path.sep) || normTarget.startsWith(normSession + path.sep)) return true;
 
         const baseSession = path.basename(normSession);
         const baseTarget = path.basename(normTarget);
