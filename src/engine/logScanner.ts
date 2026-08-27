@@ -39,7 +39,8 @@ export class LogScanner {
     ): Promise<ProjectCostReport> {
         const projectName = workspacePath ? path.basename(workspacePath) : 'All Projects';
         const allSessions: SessionDetail[] = [];
-        const projectSummaryMap = new Map<string, { sessions: number; tokens: number; costUSD: number; lastActive: string }>();
+        const projectSummaryMap = new Map<string, { projectName: string; sessions: number; tokens: number; costUSD: number; lastActive: string }>();
+        const knownProjects = this.getKnownProjects();
 
         // 1. Quét Antigravity IDE Brain logs
         if (fs.existsSync(this.brainDir)) {
@@ -62,7 +63,7 @@ export class LogScanner {
 
                             if (session) {
                                 allSessions.push(session);
-                                this.recordProjectSummary(projectSummaryMap, session);
+                                this.recordProjectSummary(projectSummaryMap, session, knownProjects);
                             }
                         } catch {}
                     }
@@ -97,7 +98,7 @@ export class LogScanner {
 
                                 if (session) {
                                     allSessions.push(session);
-                                    this.recordProjectSummary(projectSummaryMap, session);
+                                    this.recordProjectSummary(projectSummaryMap, session, knownProjects);
                                 }
                             } catch {}
                         }
@@ -106,12 +107,12 @@ export class LogScanner {
             } catch {}
         }
 
-        // Tạo danh sách allProjects
+        // Tạo danh sách allProjects chỉ chứa dự án thật đã lọc
         const allProjects: ProjectSummaryItem[] = [];
         for (const [wsPath, pStat] of projectSummaryMap.entries()) {
             allProjects.push({
                 workspacePath: wsPath,
-                projectName: wsPath === 'Unknown' ? 'Unknown Project' : path.basename(wsPath),
+                projectName: pStat.projectName || path.basename(wsPath),
                 totalSessions: pStat.sessions,
                 totalTokens: pStat.tokens,
                 totalCostUSD: Math.round(pStat.costUSD * 10000) / 10000,
@@ -258,12 +259,225 @@ export class LogScanner {
         };
     }
 
+    private static readonly IGNORED_PROJECT_NAMES = new Set([
+        'unknown', 'unknown workspace', 'unknown project', 'root', 'home',
+        'tmp', 'temp', 'private', 'var', 'etc', 'usr', 'opt', 'bin',
+        'trinhhao', 'users', 'volumes', 'hao512gb', 'antigravity',
+        'library', 'libraries', 'memory', 'scratchpad', 'public', 'caches', 'cache',
+        'src', 'source', 'dist', 'build', 'out', 'bin', 'obj',
+        'api', 'web', 'app', 'frontend', 'backend', 'core', 'shared', 'common', 'server', 'client',
+        'docs', 'doc', 'documentation', 'specs', 'spec', 'manifests', 'manifest',
+        'socket', 'sockets', 'members', 'member', 'restapi', 'care', 'plugins', 'plugin',
+        'assets', 'images', 'icons', 'styles', 'scripts', 'script', 'plans', 'resources', 'sketchbook',
+        'node_modules', 'vendor', 'packages', 'services', 'libs', 'lib', 'internal', 'pkg', 'cmd',
+        'adapters', 'adapter', 'agents', 'agent', 'config', 'skills', 'skill', 'sidecars', 'hooks',
+        'tests', 'test', '__tests__', 'fixtures', 'reports', '6_documents_reports',
+        '.git', '.vscode', '.claude', '.idea', '.gemini', '.gemini-ide', '.antigravity', '.antigravity-ide',
+        'scratch', 'conversations', 'knowledge', 'worktrees', 'html_artifacts', 'browser_recordings'
+    ]);
+
+    /**
+     * Quét và lập chỉ mục các thư mục Project thực tế trên đĩa
+     */
+    private getKnownProjects(): Map<string, { projectName: string; workspacePath: string }> {
+        const known = new Map<string, { projectName: string; workspacePath: string }>();
+        const osHomedir = os.homedir();
+        const searchDirs = [
+            '/Volumes/Hao512gb/Antigravity',
+            path.join(osHomedir, 'Antigravity'),
+            osHomedir,
+            path.join(osHomedir, 'Projects')
+        ];
+
+        for (const sDir of searchDirs) {
+            if (!fs.existsSync(sDir)) continue;
+            try {
+                const entries = fs.readdirSync(sDir);
+                for (const name of entries) {
+                    if (name.startsWith('.') || name.startsWith('._') || LogScanner.IGNORED_PROJECT_NAMES.has(name.toLowerCase())) continue;
+                    const fullP = path.join(sDir, name);
+                    try {
+                        const stat = fs.lstatSync(fullP);
+                        if (stat.isDirectory()) {
+                            const key = name.toLowerCase();
+                            if (!known.has(key)) {
+                                known.set(key, { projectName: name, workspacePath: fullP });
+                            }
+                        }
+                    } catch {}
+                }
+            } catch {}
+        }
+        return known;
+    }
+
+    /**
+     * Phân giải một đường dẫn bất kỳ về đúng Project Root
+     */
+    private resolveProject(rawPath: string, knownProjects: Map<string, { projectName: string; workspacePath: string }>): { projectName: string; workspacePath: string } | null {
+        if (!rawPath) return null;
+        let clean = rawPath.trim();
+
+        // 1. Xử lý tên folder từ Claude Code CLI
+        if (clean.startsWith('-Users-') || clean.startsWith('-Volumes-') || clean.startsWith('-private-')) {
+            const withoutPrefix = clean
+                .replace(/^-(?:Users|Volumes)-[^\-]+-Antigravity-/, '')
+                .replace(/^-(?:Users|Volumes)-[^\-]+-/, '')
+                .replace(/^-(?:private)-tmp/, '');
+
+            if (!withoutPrefix || withoutPrefix === '-' || withoutPrefix.toLowerCase() === 'antigravity') {
+                return null;
+            }
+
+            // Thử khớp trực tiếp trong Known Projects
+            const lowerWithout = withoutPrefix.toLowerCase();
+            for (const [k, p] of knownProjects.entries()) {
+                if (lowerWithout === k || lowerWithout.endsWith('-' + k) || lowerWithout.includes(k)) {
+                    return p;
+                }
+            }
+
+            const cleanName = withoutPrefix
+                .replace(/^Ung-dung-mobile-/, '')
+                .replace(/^Ung-dung-Zalo-/, '')
+                .replace(/^Ung-dung-/, '')
+                .replace(/^apps-mobile-/, '')
+                .replace(/^mobile-app-/, '')
+                .replace(/^mini-app-zalo-/, '')
+                .replace(/^tien-ich-/, '')
+                .replace(/^Projects-/, '');
+
+            if (cleanName && !LogScanner.IGNORED_PROJECT_NAMES.has(cleanName.toLowerCase()) && !cleanName.startsWith('.') && !cleanName.includes('.')) {
+                let resolved = `/Volumes/Hao512gb/Antigravity/${cleanName}`;
+                if (!fs.existsSync(resolved)) {
+                    resolved = path.join(os.homedir(), 'Antigravity', cleanName);
+                }
+                return {
+                    projectName: cleanName,
+                    workspacePath: resolved
+                };
+            }
+            return null;
+        }
+
+        clean = clean.replace(/^file:\/\//, '');
+        clean = path.normalize(clean);
+
+        // 2. Dò ngược từ thư mục cha lên tối đa 10 cấp xem có thuộc Known Project nào không
+        let cur = clean;
+        for (let i = 0; i < 10; i++) {
+            if (!cur || cur === '/' || cur === '.' || cur === os.homedir()) break;
+            const bName = path.basename(cur).toLowerCase();
+            if (knownProjects.has(bName)) {
+                return knownProjects.get(bName)!;
+            }
+            cur = path.dirname(cur);
+        }
+
+        // 3. Kiểm tra Antigravity subpath
+        const antigravityMatch = clean.match(/(?:\/Volumes\/[^\/]+|\/Users\/[^\/]+)?\/Antigravity\/(.+)/i);
+        if (antigravityMatch) {
+            const subPath = antigravityMatch[1];
+            const parts = subPath.split(path.sep).filter(Boolean);
+            if (parts.length > 0) {
+                let pName = parts[0];
+                if (parts.length > 1 && (pName.match(/^\d+_/) || pName.startsWith('Ung-dung') || pName.startsWith('apps-') || pName.startsWith('mini-app'))) {
+                    const candidate = parts[1];
+                    if (!LogScanner.IGNORED_PROJECT_NAMES.has(candidate.toLowerCase())) {
+                        pName = candidate;
+                    }
+                }
+                pName = pName
+                    .replace(/^Ung-dung-mobile-/, '')
+                    .replace(/^Ung-dung-Zalo-/, '')
+                    .replace(/^Ung-dung-/, '')
+                    .replace(/^apps-mobile-/, '')
+                    .replace(/^mobile-app-/, '')
+                    .replace(/^mini-app-zalo-/, '')
+                    .replace(/^tien-ich-/, '');
+
+                // Bỏ qua nếu là file hoặc tên thư mục rác
+                if (!LogScanner.IGNORED_PROJECT_NAMES.has(pName.toLowerCase()) && !pName.startsWith('.') && !pName.includes('.')) {
+                    let resolved = `/Volumes/Hao512gb/Antigravity/${pName}`;
+                    if (!fs.existsSync(resolved)) {
+                        resolved = path.join(os.homedir(), 'Antigravity', pName);
+                    }
+                    return {
+                        projectName: pName,
+                        workspacePath: resolved
+                    };
+                }
+            }
+        }
+
+        // 4. Nếu đường dẫn ngoài Antigravity mà khớp với thư mục dự án có thật trên đĩa
+        if (fs.existsSync(clean)) {
+            try {
+                let checkDir = clean;
+                if (fs.lstatSync(clean).isFile()) {
+                    checkDir = path.dirname(clean);
+                }
+                const bName = path.basename(checkDir);
+                if (!LogScanner.IGNORED_PROJECT_NAMES.has(bName.toLowerCase()) && !bName.startsWith('.') && !bName.includes('.')) {
+                    if (checkDir !== os.homedir() && checkDir !== '/Volumes/Hao512gb') {
+                        return {
+                            projectName: bName,
+                            workspacePath: checkDir
+                        };
+                    }
+                }
+            } catch {}
+        }
+
+        return null;
+    }
+
     private recordProjectSummary(
-        projectSummaryMap: Map<string, { sessions: number; tokens: number; costUSD: number; lastActive: string }>,
-        session: SessionDetail
+        projectSummaryMap: Map<string, { projectName: string; sessions: number; tokens: number; costUSD: number; lastActive: string }>,
+        session: SessionDetail,
+        knownProjects: Map<string, { projectName: string; workspacePath: string }>
     ) {
-        const ws = session.workspacePath || 'Unknown';
-        const existingWs = projectSummaryMap.get(ws) || { sessions: 0, tokens: 0, costUSD: 0, lastActive: session.startTime };
+        let matched = this.resolveProject(session.workspacePath, knownProjects);
+        if (!matched && session.filesTouched && session.filesTouched.length > 0) {
+            for (const f of session.filesTouched) {
+                matched = this.resolveProject(f, knownProjects);
+                if (matched) break;
+            }
+        }
+
+        if (!matched) {
+            return; // Bỏ qua hoàn toàn các file hoặc session không thuộc dự án nào
+        }
+
+        // Đảm bảo không bao giờ chứa file extension hoặc tên rác
+        const lowerName = matched.projectName.toLowerCase().trim();
+        if (
+            !matched.projectName ||
+            matched.projectName.trim().length <= 1 ||
+            matched.projectName.includes('.') ||
+            matched.projectName.startsWith('.') ||
+            LogScanner.IGNORED_PROJECT_NAMES.has(lowerName) ||
+            matched.workspacePath.includes('/.agents/') ||
+            matched.workspacePath.includes('/.claude/') ||
+            matched.workspacePath.includes('/.gemini/') ||
+            matched.workspacePath.includes('/Library/') ||
+            matched.workspacePath.includes('/private/tmp')
+        ) {
+            return;
+        }
+
+        // Cập nhật lại workspacePath chuẩn cho session
+        session.workspacePath = matched.workspacePath;
+
+        const ws = matched.workspacePath;
+        const existingWs = projectSummaryMap.get(ws) || {
+            projectName: matched.projectName,
+            sessions: 0,
+            tokens: 0,
+            costUSD: 0,
+            lastActive: session.startTime
+        };
+
         existingWs.sessions++;
         existingWs.tokens += session.totalTokens;
         existingWs.costUSD += session.costUSD;
