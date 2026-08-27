@@ -196,14 +196,65 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('acost.openDashboard', () => {
-            vscode.commands.executeCommand('acost.sidebar.focus');
-        })
-    );
+        vscode.commands.registerCommand('acost.searchProject', async () => {
+            const t = getTranslation(currentConfig.language);
+            if (!currentReport || !currentReport.allProjects || currentReport.allProjects.length === 0) {
+                await performScan();
+            }
 
-    context.subscriptions.push(
-        vscode.commands.registerCommand('acost.checkUpdate', async () => {
-            await checkForUpdates(context, currentConfig, true);
+            if (!currentReport || !currentReport.allProjects || currentReport.allProjects.length === 0) {
+                vscode.window.showWarningMessage(currentConfig.language === 'en' ? 'No projects found.' : 'Chưa tìm thấy dự án nào.');
+                return;
+            }
+
+            const isEn = currentConfig.language === 'en';
+            const isVnd = currentConfig.currency === 'VND';
+
+            type ProjectPickItem = vscode.QuickPickItem & { wsPath: string };
+            const items: ProjectPickItem[] = [];
+
+            // 1. Option Dự án hiện tại
+            items.push({
+                label: `$(folder) ${isEn ? 'Current Project' : 'Dự Án Hiện Tại'}`,
+                description: `(${currentReport.projectName})`,
+                detail: `📍 ${currentReport.workspacePath}`,
+                wsPath: 'CURRENT'
+            });
+
+            // 2. Option Tất Cả Dự Án
+            items.push({
+                label: `$(globe) ${isEn ? 'All Projects on Machine' : 'Tất Cả Dự Án Trong Máy'}`,
+                description: `(${currentReport.allProjects.length} projects)`,
+                detail: `🌐 ${isEn ? 'Summarize token & cost across all workspaces' : 'Tổng hợp token & chi phí của tất cả các dự án'}`,
+                wsPath: 'ALL'
+            });
+
+            // 3. Từng dự án cụ thể
+            for (const p of currentReport.allProjects) {
+                const costStr = isVnd
+                    ? `${ReportGenerator.formatNumber(p.totalCostVND)} ₫`
+                    : `$${p.totalCostUSD.toFixed(2)}`;
+                const tokStr = `${ReportGenerator.formatNumber(p.totalTokens)} tok`;
+                const sessStr = `${p.totalSessions} sess`;
+
+                items.push({
+                    label: `$(file-directory) ${p.projectName}`,
+                    description: `💰 ${costStr}  •  ⚡ ${tokStr}  •  📝 ${sessStr}`,
+                    detail: `📍 ${p.workspacePath}`,
+                    wsPath: p.workspacePath
+                });
+            }
+
+            const pick = await vscode.window.showQuickPick(items, {
+                placeHolder: isEn ? '🔍 Search projects by name or directory path...' : '🔍 Tìm kiếm dự án theo tên hoặc đường dẫn thư mục...',
+                matchOnDescription: true,
+                matchOnDetail: true
+            });
+
+            if (pick) {
+                await performScan(true, pick.wsPath);
+                vscode.commands.executeCommand('acost.sidebar.focus');
+            }
         })
     );
 
@@ -213,6 +264,7 @@ export function activate(context: vscode.ExtensionContext) {
             const t = getTranslation(currentConfig.language);
             type MenuItem = vscode.QuickPickItem & { id: string };
             const items: MenuItem[] = [
+                { id: 'search_project', label: '$(search) Tìm Kiếm Dự Án (Search Projects)', description: 'Tìm nhanh theo tên, token, chi phí hoặc đường dẫn' },
                 { id: 'dashboard', label: t.menuOpenDashboard, description: t.menuOpenDashboardDesc },
                 { id: 'refresh', label: t.menuRefresh, description: t.menuRefreshDesc },
                 { id: 'export_md', label: t.menuExportMd, description: t.menuExportMdDesc },
@@ -230,6 +282,9 @@ export function activate(context: vscode.ExtensionContext) {
             if (!pick) return;
 
             switch (pick.id) {
+                case 'search_project':
+                    vscode.commands.executeCommand('acost.searchProject');
+                    break;
                 case 'dashboard':
                     vscode.commands.executeCommand('acost.sidebar.focus');
                     break;

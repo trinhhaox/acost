@@ -2,7 +2,7 @@
   "name": "acost",
   "displayName": "Acost - AI Cost & Project Valuation",
   "description": "Phân tích và định giá dự án: Đo lường model sử dụng, token tiêu thụ, thời gian coding và quy đổi chi phí AI trong Antigravity IDE",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "publisher": "antigravity-tools",
   "engines": {
     "vscode": "^1.85.0"
@@ -53,6 +53,12 @@
         "command": "acost.exportHtmlReport",
         "title": "Xuất Báo Cáo Định Giá (HTML)",
         "icon": "$(file-code)",
+        "category": "Acost"
+      },
+      {
+        "command": "acost.searchProject",
+        "title": "🔍 Tìm Kiếm & Chọn Dự Án (Search Projects)",
+        "icon": "$(search)",
         "category": "Acost"
       },
       {

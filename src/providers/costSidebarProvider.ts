@@ -75,6 +75,9 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
                 case 'openSettings':
                     vscode.commands.executeCommand('workbench.action.openSettings', 'acost');
                     break;
+                case 'openSearchQuickPick':
+                    vscode.commands.executeCommand('acost.searchProject');
+                    break;
             }
         });
 
@@ -590,9 +593,10 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
 <body>
     <div class="header">
         <div class="header-title">
-            <span id="txtHeaderTitle">✨ AI Project Cost</span>
+            <span id="txtHeaderTitle">✨ Acost Valuation</span>
         </div>
         <div class="header-actions">
+            <button class="btn-icon" id="btnSearchQuickPick" title="Tìm kiếm & chọn dự án">🔍</button>
             <button class="btn-icon" id="btnRefresh" title="Làm mới dữ liệu">🔄</button>
             <button class="btn-icon" id="btnSettings" title="Cài đặt">⚙️</button>
         </div>
@@ -1100,6 +1104,11 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
         // Copy Summary
         document.getElementById('btnCopySummary').addEventListener('click', () => {
             vscode.postMessage({ type: 'copySummary' });
+        });
+
+        // Search QuickPick Button
+        document.getElementById('btnSearchQuickPick').addEventListener('click', () => {
+            vscode.postMessage({ type: 'openSearchQuickPick' });
         });
 
         // Refresh & Settings
