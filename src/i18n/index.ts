@@ -59,7 +59,10 @@ export const TRANSLATIONS = {
         menuCheckUpdate: '$(cloud-download) Kiểm tra phiên bản mới',
         menuCheckUpdateDesc: 'Kiểm tra bản cập nhật mới nhất từ GitHub Releases',
         menuSettings: '$(gear) Cài đặt Định Giá & Tỷ Giá',
-        menuSettingsDesc: 'Chỉnh Markup, Tỷ giá VND, Dev rate, Ngôn ngữ'
+        menuSettingsDesc: 'Chỉnh Markup, Tỷ giá VND, Dev rate, Ngôn ngữ',
+        searchProjectsPlaceholder: '🔍 Tìm kiếm dự án...',
+        noProjectsFound: 'Không tìm thấy dự án nào khớp từ khóa.',
+        clearSearch: 'Xóa tìm kiếm'
     },
     en: {
         extensionTitle: 'Acost',
@@ -118,8 +121,11 @@ export const TRANSLATIONS = {
         menuToggleLanguage: '$(globe) Switch Language / Đổi Ngôn Ngữ',
         menuCheckUpdate: '$(cloud-download) Check for Updates',
         menuCheckUpdateDesc: 'Check for the latest release on GitHub',
-        menuSettings: '$(gear) Extension Settings',
-        menuSettingsDesc: 'Configure Markup, Exchange Rate, Hourly Rate, Language'
+        menuSettings: '$(gear) Valuation & Exchange Settings',
+        menuSettingsDesc: 'Adjust Markup, VND rate, Dev hourly rate, Language',
+        searchProjectsPlaceholder: '🔍 Search projects...',
+        noProjectsFound: 'No matching projects found.',
+        clearSearch: 'Clear search'
     }
 };
 

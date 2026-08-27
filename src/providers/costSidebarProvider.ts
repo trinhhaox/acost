@@ -169,9 +169,55 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
             border-color: var(--primary);
         }
 
-        /* Project Switcher Dropdown */
+        /* Project Switcher & Search Bar */
         .project-select-box {
             margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+        }
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .search-icon {
+            position: absolute;
+            left: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+        .project-search-input {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-color);
+            padding: 6px 26px 6px 26px;
+            border-radius: 6px;
+            font-size: 12px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .project-search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.3);
+        }
+        .btn-clear-search {
+            position: absolute;
+            right: 6px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 0 4px;
+            display: none;
+            line-height: 1;
+        }
+        .btn-clear-search:hover {
+            color: var(--text-color);
         }
         .select-full {
             width: 100%;
@@ -182,6 +228,61 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
             border-radius: 6px;
             font-size: 12px;
             font-weight: 600;
+            outline: none;
+        }
+        .select-full:focus {
+            border-color: var(--primary);
+        }
+        .search-results-popup {
+            position: absolute;
+            top: 68px;
+            left: 0;
+            right: 0;
+            background: #1e1e24;
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+        .search-result-item {
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+        }
+        .search-result-item:hover {
+            background: rgba(56, 189, 248, 0.15);
+        }
+        .search-result-item.active-item {
+            background: rgba(56, 189, 248, 0.25);
+            border-left: 3px solid var(--primary);
+        }
+        .search-result-name {
+            font-weight: 600;
+            color: #fff;
+            max-width: 180px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .search-result-path {
+            font-size: 10px;
+            color: var(--text-muted);
+            max-width: 180px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .search-result-cost {
+            font-weight: 700;
+            color: var(--primary);
+            text-align: right;
         }
 
         /* Filter Pills */
@@ -497,11 +598,17 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
         </div>
     </div>
 
-    <!-- Project Switcher -->
+    <!-- Project Switcher & Search Bar -->
     <div class="project-select-box">
+        <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="project-search-input" id="inputSearchProject" placeholder="🔍 Tìm kiếm dự án..." autocomplete="off" />
+            <button class="btn-clear-search" id="btnClearSearch" title="Xóa tìm kiếm">✕</button>
+        </div>
         <select class="select-full" id="selectProject">
             <option value="CURRENT">Loading projects...</option>
         </select>
+        <div class="search-results-popup" id="searchResultsPopup"></div>
     </div>
 
     <!-- Filter Pills -->
@@ -606,6 +713,9 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
         let currentFilter = 'all';
         let currentSelectedWs = '';
         let i18nDict = {};
+        let allProjectsCache = [];
+        let currentReportCache = null;
+        let currentConfigCache = null;
 
         function formatNumber(num) {
             return new Intl.NumberFormat('en-US').format(Math.round(num));
@@ -621,13 +731,149 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
             return s + 's';
         }
 
+        function removeVietnameseTones(str) {
+            if (!str) return '';
+            return str
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd')
+                .replace(/Đ/g, 'D')
+                .toLowerCase();
+        }
+
         window.addEventListener('message', event => {
             const message = event.data;
             if (message.type === 'update') {
                 i18nDict = message.translations || {};
+                currentReportCache = message.report;
+                currentConfigCache = message.config;
+                allProjectsCache = message.report.allProjects || [];
                 render(message.report, message.config);
             }
         });
+
+        function populateProjectOptions(filterText = '') {
+            const selectProject = document.getElementById('selectProject');
+            if (!currentReportCache || !currentConfigCache) return;
+
+            const lang = currentConfigCache.language || 'vi';
+            const t = (i18nDict[lang]) || (i18nDict.vi) || {};
+            const isVnd = currentConfigCache.currency === 'VND';
+            const curPrefix = t.currentProjectPrefix || '📍 Dự án hiện tại';
+            const allOpt = t.allProjectsOption || '🌐 Tất Cả Dự Án Trong Máy';
+
+            const query = removeVietnameseTones(filterText.trim());
+
+            let optionsHtml = '';
+            // Always allow Current Workspace and All Projects
+            if (!query || 'du an hien tai current project'.includes(query) || removeVietnameseTones(currentReportCache.projectName).includes(query)) {
+                optionsHtml += '<option value="CURRENT">' + curPrefix + ' (' + currentReportCache.projectName + ')</option>';
+            }
+            if (!query || 'tat ca du an all projects'.includes(query)) {
+                optionsHtml += '<option value="ALL">' + allOpt + '</option>';
+            }
+
+            const matchedProjects = allProjectsCache.filter(p => {
+                if (!query) return true;
+                const pName = removeVietnameseTones(p.projectName);
+                const pPath = removeVietnameseTones(p.workspacePath);
+                return pName.includes(query) || pPath.includes(query);
+            });
+
+            for (const p of matchedProjects) {
+                const pCost = isVnd ? formatNumber(p.totalCostVND) + ' ₫' : '$' + p.totalCostUSD.toFixed(2);
+                optionsHtml += '<option value="' + p.workspacePath + '">' + p.projectName + ' (' + pCost + ')</option>';
+            }
+
+            if (matchedProjects.length === 0 && optionsHtml === '') {
+                optionsHtml = '<option value="" disabled>' + (t.noProjectsFound || 'Không tìm thấy dự án...') + '</option>';
+            }
+
+            selectProject.innerHTML = optionsHtml;
+            if (currentSelectedWs && selectProject.querySelector('option[value="' + currentSelectedWs + '"]')) {
+                selectProject.value = currentSelectedWs;
+            }
+        }
+
+        function renderSearchResultsPopup(filterText) {
+            const popup = document.getElementById('searchResultsPopup');
+            const clearBtn = document.getElementById('btnClearSearch');
+            const query = removeVietnameseTones(filterText.trim());
+
+            if (!query) {
+                popup.style.display = 'none';
+                clearBtn.style.display = 'none';
+                return;
+            }
+
+            clearBtn.style.display = 'block';
+            if (!currentReportCache || !currentConfigCache) return;
+
+            const lang = currentConfigCache.language || 'vi';
+            const t = (i18nDict[lang]) || (i18nDict.vi) || {};
+            const isVnd = currentConfigCache.currency === 'VND';
+
+            const matched = allProjectsCache.filter(p => {
+                const pName = removeVietnameseTones(p.projectName);
+                const pPath = removeVietnameseTones(p.workspacePath);
+                return pName.includes(query) || pPath.includes(query);
+            });
+
+            let popupHtml = '';
+
+            // Thêm option "Tất Cả Dự Án" nếu query khớp
+            if ('tat ca all'.includes(query)) {
+                popupHtml += \`
+                <div class="search-result-item" data-value="ALL">
+                    <div>
+                        <div class="search-result-name">🌐 \${t.allProjectsOption || 'Tất Cả Dự Án'}</div>
+                        <div class="search-result-path">Toàn bộ workspace trên máy</div>
+                    </div>
+                </div>\`;
+            }
+
+            if (matched.length === 0 && !popupHtml) {
+                popupHtml = '<div style="padding: 10px; text-align: center; color: var(--text-muted); font-size: 11px;">' + (t.noProjectsFound || 'Không tìm thấy dự án.') + '</div>';
+            } else {
+                for (const p of matched.slice(0, 30)) {
+                    const pCost = isVnd ? formatNumber(p.totalCostVND) + ' ₫' : '$' + p.totalCostUSD.toFixed(2);
+                    const isActive = currentSelectedWs === p.workspacePath ? 'active-item' : '';
+                    popupHtml += \`
+                    <div class="search-result-item \${isActive}" data-value="\${p.workspacePath}">
+                        <div>
+                            <div class="search-result-name" title="\${p.projectName}">📁 \${p.projectName}</div>
+                            <div class="search-result-path" title="\${p.workspacePath}">\${p.workspacePath}</div>
+                        </div>
+                        <div class="search-result-cost">
+                            <div>\${pCost}</div>
+                            <div style="font-size: 9px; color: var(--text-muted); font-weight: normal;">\${p.totalSessions} sess</div>
+                        </div>
+                    </div>\`;
+                }
+            }
+
+            popup.innerHTML = popupHtml;
+            popup.style.display = 'block';
+
+            // Bind click cho các items trong popup
+            popup.querySelectorAll('.search-result-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const val = item.getAttribute('data-value');
+                    currentSelectedWs = val;
+                    popup.style.display = 'none';
+                    document.getElementById('inputSearchProject').value = '';
+                    clearBtn.style.display = 'none';
+                    populateProjectOptions('');
+                    const selectProject = document.getElementById('selectProject');
+                    selectProject.value = val;
+                    vscode.postMessage({
+                        type: 'refresh',
+                        workspacePath: currentSelectedWs,
+                        dateFilter: currentFilter
+                    });
+                });
+            });
+        }
 
         function render(report, config) {
             if (!report) return;
@@ -641,6 +887,7 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
             document.getElementById('txtHeaderTitle').innerText = t.dashboardTitle || '✨ AI Project Cost';
             document.getElementById('btnRefresh').title = t.refreshTooltip || 'Làm mới';
             document.getElementById('btnSettings').title = t.settingsTooltip || 'Cài đặt';
+            document.getElementById('inputSearchProject').placeholder = t.searchProjectsPlaceholder || '🔍 Tìm kiếm dự án...';
 
             document.getElementById('pillAll').innerText = t.allTime || 'Tất cả';
             document.getElementById('pillToday').innerText = t.today || 'Hôm nay';
@@ -671,22 +918,9 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
             document.getElementById('inputMarkup').value = config.markupMultiplier;
             document.getElementById('inputHourlyRate').value = config.humanHourlyRate;
 
-            // Project Switcher populate
-            const selectProject = document.getElementById('selectProject');
-            if (report.allProjects && report.allProjects.length > 0) {
-                const curPrefix = t.currentProjectPrefix || '📍 Dự án hiện tại';
-                const allOpt = t.allProjectsOption || '🌐 Tất Cả Dự Án Trong Máy';
-                let optionsHtml = '<option value="CURRENT">' + curPrefix + ' (' + report.projectName + ')</option>';
-                optionsHtml += '<option value="ALL">' + allOpt + '</option>';
-                for (const p of report.allProjects) {
-                    const pCost = isVnd ? formatNumber(p.totalCostVND) + ' ₫' : '$' + p.totalCostUSD.toFixed(2);
-                    optionsHtml += '<option value="' + p.workspacePath + '">' + p.projectName + ' (' + pCost + ')</option>';
-                }
-                selectProject.innerHTML = optionsHtml;
-                if (currentSelectedWs) {
-                    selectProject.value = currentSelectedWs;
-                }
-            }
+            // Populate Project Switcher
+            const searchVal = document.getElementById('inputSearchProject').value;
+            populateProjectOptions(searchVal);
 
             // Filter pills active update
             document.querySelectorAll('.pill').forEach(p => {
@@ -797,6 +1031,32 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
                 }).join('');
             }
         }
+
+        // Live Search Projects Input
+        const searchInput = document.getElementById('inputSearchProject');
+        const clearSearchBtn = document.getElementById('btnClearSearch');
+
+        searchInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            populateProjectOptions(val);
+            renderSearchResultsPopup(val);
+        });
+
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            populateProjectOptions('');
+            renderSearchResultsPopup('');
+            searchInput.focus();
+        });
+
+        // Đóng popup khi click ra ngoài
+        document.addEventListener('click', (e) => {
+            const popup = document.getElementById('searchResultsPopup');
+            const box = document.querySelector('.project-select-box');
+            if (box && !box.contains(e.target)) {
+                popup.style.display = 'none';
+            }
+        });
 
         // Tabs switcher
         document.getElementById('tabSessionsBtn').addEventListener('click', () => {
