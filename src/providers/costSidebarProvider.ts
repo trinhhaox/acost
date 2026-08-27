@@ -184,20 +184,23 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
             position: relative;
             display: flex;
             align-items: center;
+            width: 100%;
         }
         .search-icon {
             position: absolute;
-            left: 8px;
-            font-size: 12px;
+            left: 10px;
+            font-size: 13px;
             color: var(--text-muted);
             pointer-events: none;
+            display: flex;
+            align-items: center;
         }
         .project-search-input {
             width: 100%;
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             color: var(--text-color);
-            padding: 6px 26px 6px 26px;
+            padding: 6px 26px 6px 30px;
             border-radius: 6px;
             font-size: 12px;
             outline: none;
@@ -606,7 +609,7 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
     <div class="project-select-box">
         <div class="search-input-wrapper">
             <span class="search-icon">🔍</span>
-            <input type="text" class="project-search-input" id="inputSearchProject" placeholder="🔍 Tìm kiếm dự án..." autocomplete="off" />
+            <input type="text" class="project-search-input" id="inputSearchProject" placeholder="Tìm kiếm dự án..." autocomplete="off" />
             <button class="btn-clear-search" id="btnClearSearch" title="Xóa tìm kiếm">✕</button>
         </div>
         <select class="select-full" id="selectProject">
@@ -891,7 +894,7 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
             document.getElementById('txtHeaderTitle').innerText = t.dashboardTitle || '✨ AI Project Cost';
             document.getElementById('btnRefresh').title = t.refreshTooltip || 'Làm mới';
             document.getElementById('btnSettings').title = t.settingsTooltip || 'Cài đặt';
-            document.getElementById('inputSearchProject').placeholder = t.searchProjectsPlaceholder || '🔍 Tìm kiếm dự án...';
+            document.getElementById('inputSearchProject').placeholder = t.searchProjectsPlaceholder || 'Tìm kiếm dự án...';
 
             document.getElementById('pillAll').innerText = t.allTime || 'Tất cả';
             document.getElementById('pillToday').innerText = t.today || 'Hôm nay';

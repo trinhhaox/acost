@@ -60,7 +60,7 @@ export const TRANSLATIONS = {
         menuCheckUpdateDesc: 'Kiểm tra bản cập nhật mới nhất từ GitHub Releases',
         menuSettings: '$(gear) Cài đặt Định Giá & Tỷ Giá',
         menuSettingsDesc: 'Chỉnh Markup, Tỷ giá VND, Dev rate, Ngôn ngữ',
-        searchProjectsPlaceholder: '🔍 Tìm kiếm dự án...',
+        searchProjectsPlaceholder: 'Tìm kiếm dự án...',
         noProjectsFound: 'Không tìm thấy dự án nào khớp từ khóa.',
         clearSearch: 'Xóa tìm kiếm'
     },
@@ -123,7 +123,7 @@ export const TRANSLATIONS = {
         menuCheckUpdateDesc: 'Check for the latest release on GitHub',
         menuSettings: '$(gear) Valuation & Exchange Settings',
         menuSettingsDesc: 'Adjust Markup, VND rate, Dev hourly rate, Language',
-        searchProjectsPlaceholder: '🔍 Search projects...',
+        searchProjectsPlaceholder: 'Search projects...',
         noProjectsFound: 'No matching projects found.',
         clearSearch: 'Clear search'
     }
