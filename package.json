@@ -1,6 +1,6 @@
 {
-  "name": "antigravity-cost",
-  "displayName": "Antigravity Project AI Cost & Valuation",
+  "name": "acost",
+  "displayName": "Acost - AI Cost & Project Valuation",
   "description": "Phân tích và định giá dự án: Đo lường model sử dụng, token tiêu thụ, thời gian coding và quy đổi chi phí AI trong Antigravity IDE",
   "version": "1.3.0",
   "publisher": "antigravity-tools",
@@ -21,113 +21,113 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "antigravity-cost-container",
-          "title": "Project AI Cost",
+          "id": "acost-container",
+          "title": "Acost",
           "icon": "icon.png"
         }
       ]
     },
     "views": {
-      "antigravity-cost-container": [
+      "acost-container": [
         {
           "type": "webview",
-          "id": "antigravity-cost.sidebar",
-          "name": "Project AI Valuation"
+          "id": "acost.sidebar",
+          "name": "Acost Valuation"
         }
       ]
     },
     "commands": [
       {
-        "command": "antigravity-cost.refresh",
+        "command": "acost.refresh",
         "title": "Làm mới dữ liệu chi phí",
         "icon": "$(refresh)",
-        "category": "Antigravity Cost"
+        "category": "Acost"
       },
       {
-        "command": "antigravity-cost.exportReport",
+        "command": "acost.exportReport",
         "title": "Xuất Báo Cáo Định Giá Dự Án (Markdown)",
         "icon": "$(file-text)",
-        "category": "Antigravity Cost"
+        "category": "Acost"
       },
       {
-        "command": "antigravity-cost.exportHtmlReport",
+        "command": "acost.exportHtmlReport",
         "title": "Xuất Báo Cáo Định Giá (HTML)",
         "icon": "$(file-code)",
-        "category": "Antigravity Cost"
+        "category": "Acost"
       },
       {
-        "command": "antigravity-cost.openDashboard",
+        "command": "acost.openDashboard",
         "title": "Mở Dashboard Định Giá Chi Phí",
         "icon": "$(dashboard)",
-        "category": "Antigravity Cost"
+        "category": "Acost"
       },
       {
-        "command": "antigravity-cost.checkUpdate",
+        "command": "acost.checkUpdate",
         "title": "Kiểm tra phiên bản mới từ GitHub",
         "icon": "$(cloud-download)",
-        "category": "Antigravity Cost"
+        "category": "Acost"
       },
       {
-        "command": "antigravity-cost.menu",
+        "command": "acost.menu",
         "title": "Menu Quản Lý Chi Phí",
-        "category": "Antigravity Cost"
+        "category": "Acost"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "antigravity-cost.refresh",
-          "when": "view == antigravity-cost.sidebar",
+          "command": "acost.refresh",
+          "when": "view == acost.sidebar",
           "group": "navigation@1"
         },
         {
-          "command": "antigravity-cost.exportReport",
-          "when": "view == antigravity-cost.sidebar",
+          "command": "acost.exportReport",
+          "when": "view == acost.sidebar",
           "group": "navigation@2"
         }
       ]
     },
     "configuration": {
-      "title": "Antigravity Cost & Valuation",
+      "title": "Acost - Valuation & Pricing Settings",
       "properties": {
-        "antigravityCost.language": {
+        "acost.language": {
           "type": "string",
           "enum": ["vi", "en"],
           "default": "vi",
           "description": "Ngôn ngữ hiển thị giao diện và báo cáo (vi: Tiếng Việt, en: English)"
         },
-        "antigravityCost.currency": {
+        "acost.currency": {
           "type": "string",
           "enum": ["USD", "VND"],
           "default": "USD",
           "description": "Đơn vị tiền tệ chính hiển thị"
         },
-        "antigravityCost.vndExchangeRate": {
+        "acost.vndExchangeRate": {
           "type": "number",
           "default": 25500,
           "description": "Tỷ giá quy đổi USD sang VND"
         },
-        "antigravityCost.markupMultiplier": {
+        "acost.markupMultiplier": {
           "type": "number",
           "default": 2.5,
           "description": "Hệ số nhân định giá dự án (Markup Multiplier trên chi phí AI)"
         },
-        "antigravityCost.humanHourlyRate": {
+        "acost.humanHourlyRate": {
           "type": "number",
           "default": 25,
           "description": "Chi phí nhân công tương đương / giờ (USD) để tính chi phí thay thế dev truyền thống"
         },
-        "antigravityCost.autoScanOnOpen": {
+        "acost.autoScanOnOpen": {
           "type": "boolean",
           "default": true,
           "description": "Tự động quét và cập nhật chi phí dự án khi mở workspace"
         },
-        "antigravityCost.autoCheckUpdates": {
+        "acost.autoCheckUpdates": {
           "type": "boolean",
           "default": true,
           "description": "Tự động kiểm tra phiên bản mới từ GitHub khi khởi động extension"
         },
-        "antigravityCost.customPricing": {
+        "acost.customPricing": {
           "type": "object",
           "default": {},
           "description": "Tùy chỉnh bảng giá cho các model cụ thể (dạng JSON)"

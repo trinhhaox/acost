@@ -4,27 +4,34 @@ import * as os from 'os';
 import { FileCostStat, ModelStat, PricingConfig, ProjectCostReport, ProjectSummaryItem, SessionDetail } from '../types';
 import { PricingEngine } from './pricingEngine';
 import { TranscriptParser } from './transcriptParser';
+import { ClaudeCodeParser } from './claudeCodeParser';
 
 export class LogScanner {
     private pricingEngine: PricingEngine;
     private parser: TranscriptParser;
+    private claudeParser: ClaudeCodeParser;
     private brainDir: string;
+    private claudeProjectsDir: string;
     private cache: Map<string, { mtime: number; data: SessionDetail | null }> = new Map();
 
-    constructor(config: PricingConfig, customBrainDir?: string) {
+    constructor(config: PricingConfig, customBrainDir?: string, customClaudeDir?: string) {
         this.pricingEngine = new PricingEngine(config);
         this.parser = new TranscriptParser(this.pricingEngine);
+        this.claudeParser = new ClaudeCodeParser(this.pricingEngine);
         this.brainDir = customBrainDir || path.join(os.homedir(), '.gemini', 'antigravity-ide', 'brain');
+        this.claudeProjectsDir = customClaudeDir || path.join(os.homedir(), '.claude', 'projects');
     }
 
     public updateConfig(config: PricingConfig) {
         this.pricingEngine = new PricingEngine(config);
         this.parser = new TranscriptParser(this.pricingEngine);
+        this.claudeParser = new ClaudeCodeParser(this.pricingEngine);
         this.cache.clear();
     }
 
     /**
      * Quét và tạo báo cáo chi phí cho workspace hiện tại với bộ lọc thời gian
+     * Hỗ trợ cả Antigravity IDE và Claude Code CLI
      */
     public async scanWorkspace(
         workspacePath?: string,
@@ -34,50 +41,69 @@ export class LogScanner {
         const allSessions: SessionDetail[] = [];
         const projectSummaryMap = new Map<string, { sessions: number; tokens: number; costUSD: number; lastActive: string }>();
 
-        if (!fs.existsSync(this.brainDir)) {
-            return this.buildEmptyReport(workspacePath || '', projectName, dateFilter);
-        }
+        // 1. Quét Antigravity IDE Brain logs
+        if (fs.existsSync(this.brainDir)) {
+            try {
+                const convDirs = fs.readdirSync(this.brainDir);
+                for (const dirName of convDirs) {
+                    const transcriptPath = path.join(this.brainDir, dirName, '.system_generated', 'logs', 'transcript.jsonl');
+                    if (fs.existsSync(transcriptPath)) {
+                        try {
+                            const stats = fs.statSync(transcriptPath);
+                            const cached = this.cache.get(transcriptPath);
 
-        let convDirs: string[] = [];
-        try {
-            convDirs = fs.readdirSync(this.brainDir);
-        } catch {
-            return this.buildEmptyReport(workspacePath || '', projectName, dateFilter);
-        }
+                            let session: SessionDetail | null = null;
+                            if (cached && cached.mtime === stats.mtimeMs) {
+                                session = cached.data;
+                            } else {
+                                session = await this.parser.parseFile(transcriptPath);
+                                this.cache.set(transcriptPath, { mtime: stats.mtimeMs, data: session });
+                            }
 
-        for (const dirName of convDirs) {
-            const transcriptPath = path.join(this.brainDir, dirName, '.system_generated', 'logs', 'transcript.jsonl');
-            if (fs.existsSync(transcriptPath)) {
-                try {
-                    const stats = fs.statSync(transcriptPath);
-                    const cached = this.cache.get(transcriptPath);
-
-                    let session: SessionDetail | null = null;
-                    if (cached && cached.mtime === stats.mtimeMs) {
-                        session = cached.data;
-                    } else {
-                        session = await this.parser.parseFile(transcriptPath);
-                        this.cache.set(transcriptPath, { mtime: stats.mtimeMs, data: session });
+                            if (session) {
+                                allSessions.push(session);
+                                this.recordProjectSummary(projectSummaryMap, session);
+                            }
+                        } catch {}
                     }
-
-                    if (session) {
-                        allSessions.push(session);
-
-                        // Thống kê theo từng project
-                        const ws = session.workspacePath || 'Unknown';
-                        const existingWs = projectSummaryMap.get(ws) || { sessions: 0, tokens: 0, costUSD: 0, lastActive: session.startTime };
-                        existingWs.sessions++;
-                        existingWs.tokens += session.totalTokens;
-                        existingWs.costUSD += session.costUSD;
-                        if (new Date(session.startTime).getTime() > new Date(existingWs.lastActive).getTime()) {
-                            existingWs.lastActive = session.startTime;
-                        }
-                        projectSummaryMap.set(ws, existingWs);
-                    }
-                } catch {
-                    // Tiếp tục
                 }
-            }
+            } catch {}
+        }
+
+        // 2. Quét Claude Code CLI projects logs
+        if (fs.existsSync(this.claudeProjectsDir)) {
+            try {
+                const projectDirs = fs.readdirSync(this.claudeProjectsDir);
+                for (const pDir of projectDirs) {
+                    const fullPDir = path.join(this.claudeProjectsDir, pDir);
+                    try {
+                        const pStat = fs.statSync(fullPDir);
+                        if (!pStat.isDirectory()) continue;
+
+                        const sessionFiles = fs.readdirSync(fullPDir).filter(f => f.endsWith('.jsonl'));
+                        for (const sFile of sessionFiles) {
+                            const sessionPath = path.join(fullPDir, sFile);
+                            try {
+                                const stats = fs.statSync(sessionPath);
+                                const cached = this.cache.get(sessionPath);
+
+                                let session: SessionDetail | null = null;
+                                if (cached && cached.mtime === stats.mtimeMs) {
+                                    session = cached.data;
+                                } else {
+                                    session = await this.claudeParser.parseFile(sessionPath);
+                                    this.cache.set(sessionPath, { mtime: stats.mtimeMs, data: session });
+                                }
+
+                                if (session) {
+                                    allSessions.push(session);
+                                    this.recordProjectSummary(projectSummaryMap, session);
+                                }
+                            } catch {}
+                        }
+                    } catch {}
+                }
+            } catch {}
         }
 
         // Tạo danh sách allProjects
@@ -98,11 +124,7 @@ export class LogScanner {
         // Lọc session theo Workspace
         let filteredSessions = allSessions;
         if (workspacePath && workspacePath !== 'ALL' && workspacePath !== 'All Projects') {
-            const normTarget = path.normalize(workspacePath).toLowerCase();
-            filteredSessions = allSessions.filter(s => {
-                const normDetected = path.normalize(s.workspacePath).toLowerCase();
-                return normDetected.startsWith(normTarget) || normTarget.startsWith(normDetected);
-            });
+            filteredSessions = allSessions.filter(s => this.isWorkspaceMatch(s.workspacePath, workspacePath));
         }
 
         // Lọc session theo Date Filter
@@ -234,6 +256,38 @@ export class LogScanner {
             allProjects,
             valuation
         };
+    }
+
+    private recordProjectSummary(
+        projectSummaryMap: Map<string, { sessions: number; tokens: number; costUSD: number; lastActive: string }>,
+        session: SessionDetail
+    ) {
+        const ws = session.workspacePath || 'Unknown';
+        const existingWs = projectSummaryMap.get(ws) || { sessions: 0, tokens: 0, costUSD: 0, lastActive: session.startTime };
+        existingWs.sessions++;
+        existingWs.tokens += session.totalTokens;
+        existingWs.costUSD += session.costUSD;
+        if (new Date(session.startTime).getTime() > new Date(existingWs.lastActive).getTime()) {
+            existingWs.lastActive = session.startTime;
+        }
+        projectSummaryMap.set(ws, existingWs);
+    }
+
+    private isWorkspaceMatch(sessionWs: string, targetWs: string): boolean {
+        if (!sessionWs || !targetWs) return false;
+        const normSession = path.normalize(sessionWs).toLowerCase();
+        const normTarget = path.normalize(targetWs).toLowerCase();
+
+        if (normSession === normTarget) return true;
+        if (normSession.startsWith(normTarget + path.sep)) return true;
+        if (normTarget.startsWith(normSession + path.sep)) return true;
+
+        const baseSession = path.basename(normSession);
+        const baseTarget = path.basename(normTarget);
+        if (baseSession && baseTarget && baseSession === baseTarget) {
+            return true;
+        }
+        return false;
     }
 
     private buildEmptyReport(workspacePath: string, projectName: string, dateFilter: 'all' | 'today' | '7d' | '30d'): ProjectCostReport {

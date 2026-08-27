@@ -6,7 +6,7 @@ import { PricingConfig } from '../src/types';
 
 async function runTestSuite() {
     console.log('====================================================');
-    console.log('🧪 BẮT ĐẦU KIỂM THỬ TOÀN DIỆN EXTENSION ANTIGRAVITY-COST');
+    console.log('🧪 BẮT ĐẦU KIỂM THỬ TOÀN DIỆN EXTENSION ACOST');
     console.log('====================================================\n');
 
     let passedTests = 0;
@@ -35,7 +35,7 @@ async function runTestSuite() {
     const emptyTokens = Tokenizer.estimateTokens('');
     assert(emptyTokens === 0, 'Đếm token chuỗi rỗng trả về 0');
 
-    const sampleEnglish = 'Hello world, this is a test prompt for Antigravity AI Cost extension.';
+    const sampleEnglish = 'Hello world, this is a test prompt for Acost extension.';
     const engTokens = Tokenizer.estimateTokens(sampleEnglish);
     assert(engTokens > 10 && engTokens < 30, `Đếm token English hợp lý (${engTokens} tokens)`);
 
@@ -69,6 +69,11 @@ async function runTestSuite() {
     // 1M input ($3) + 1.5M output ($22.5) = $25.5
     assert(Math.abs(costClaude - 25.5) < 0.0001, `Tính đúng chi phí Claude Sonnet 4.6 kèm thinking ($${costClaude})`);
 
+    // Test tính chi phí Claude có Prompt Cache (Read & Create)
+    const costClaudeCached = pricing.calculateCostUSD('claude-3.5-sonnet', 100_000, 50_000, 0, 100_000, 500_000);
+    // 0.1M in ($0.3) + 0.05M out ($0.75) + 0.1M create ($0.375) + 0.5M read ($0.15) = $1.575
+    assert(Math.abs(costClaudeCached - 1.575) < 0.0001, `Tính đúng chi phí Claude Prompt Cache ($${costClaudeCached})`);
+
     // Test quy đổi VND
     const vndVal = pricing.usdToVnd(10);
     assert(vndVal === 255000, `Chuyển đổi USD sang VND chính xác ($10 -> ${vndVal} ₫)`);
@@ -81,8 +86,11 @@ async function runTestSuite() {
     assert(val.humanCostEquivalentUSD > val.recommendedValuationUSD, `Tiết kiệm ngân sách so với thuê Dev ($${val.savingsUSD} savings)`);
 
 
-    // 3. TEST LOG SCANNER TRÊN LOGS THỰC TẾ
-    console.log('\n--- 3. Kiểm thử LogScanner trên Dữ Liệu Thực Tế ---');
+    // 3. TEST CLAUDE CODE CLI PARSER
+    console.log('\n--- 3. Kiểm thử ClaudeCodeParser Engine ---');
+    const { ClaudeCodeParser } = require('../src/engine/claudeCodeParser');
+    const claudeParser = new ClaudeCodeParser(pricing);
+    assert(typeof claudeParser.parseFile === 'function', 'ClaudeCodeParser được khởi tạo thành công');
     const scanner = new LogScanner(testConfig);
 
     // Test scan All Projects

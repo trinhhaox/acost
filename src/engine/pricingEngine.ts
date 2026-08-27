@@ -190,9 +190,13 @@ export class PricingEngine {
         if (lower.includes('claude') && lower.includes('sonnet') && lower.includes('4.6')) return 'claude-sonnet-4.6';
         if (lower.includes('claude') && lower.includes('opus') && lower.includes('4.6')) return 'claude-opus-4.6';
         if (lower.includes('claude') && lower.includes('3.7') && lower.includes('sonnet')) return 'claude-3.7-sonnet';
+        if (lower.includes('claude-3-7-sonnet')) return 'claude-3.7-sonnet';
         if (lower.includes('claude') && lower.includes('3.5') && lower.includes('sonnet')) return 'claude-3.5-sonnet';
+        if (lower.includes('claude-3-5-sonnet')) return 'claude-3.5-sonnet';
         if (lower.includes('claude') && lower.includes('haiku')) return 'claude-3.5-haiku';
+        if (lower.includes('claude-haiku')) return 'claude-3.5-haiku';
         if (lower.includes('claude') && lower.includes('opus')) return 'claude-3-opus';
+        if (lower.includes('claude-3-opus')) return 'claude-3-opus';
 
         // OpenAI
         if (lower.includes('gpt-4o-mini') || lower.includes('4o-mini')) return 'gpt-4o-mini';
@@ -202,7 +206,7 @@ export class PricingEngine {
 
         // General Fallbacks
         if (lower.includes('gemini')) return 'gemini-3.7-flash';
-        if (lower.includes('claude')) return 'claude-sonnet-4.6';
+        if (lower.includes('claude')) return 'claude-3.7-sonnet';
         if (lower.includes('gpt')) return 'gpt-4o';
 
         return 'default';
@@ -214,21 +218,26 @@ export class PricingEngine {
     }
 
     /**
-     * Tính chi phí token theo USD
+     * Tính chi phí token theo USD (hỗ trợ cả Cache Read và Cache Creation)
      */
     public calculateCostUSD(
         modelKey: string,
         inputTokens: number,
         outputTokens: number,
-        thinkingTokens: number = 0
+        thinkingTokens: number = 0,
+        cacheCreationTokens: number = 0,
+        cacheReadTokens: number = 0
     ): number {
         const pricing = this.getModelPricing(modelKey);
         const totalOutput = outputTokens + thinkingTokens;
 
         const inputCost = (inputTokens / 1_000_000) * pricing.inputPricePerMillion;
         const outputCost = (totalOutput / 1_000_000) * pricing.outputPricePerMillion;
+        const cacheReadRate = pricing.cacheReadPricePerMillion !== undefined ? pricing.cacheReadPricePerMillion : (pricing.inputPricePerMillion * 0.1);
+        const cacheReadCost = (cacheReadTokens / 1_000_000) * cacheReadRate;
+        const cacheCreateCost = (cacheCreationTokens / 1_000_000) * (pricing.inputPricePerMillion * 1.25);
 
-        return inputCost + outputCost;
+        return inputCost + outputCost + cacheReadCost + cacheCreateCost;
     }
 
     /**

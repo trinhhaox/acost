@@ -62,10 +62,10 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
 
                         let summary = '';
                         if (isEn) {
-                            summary = `📊 [Antigravity AI Cost] Project: ${this._currentReport.projectName}\n- AI Token Cost: ${cost}\n- Recommended Valuation: ${val}\n- Total Tokens: ${ReportGenerator.formatNumber(this._currentReport.totalTokens)}\n- Active Time: ${ReportGenerator.formatDuration(this._currentReport.activeDurationSeconds)} (${this._currentReport.totalSessions} sessions)`;
+                            summary = `📊 [Acost] Project: ${this._currentReport.projectName}\n- AI Token Cost: ${cost}\n- Recommended Valuation: ${val}\n- Total Tokens: ${ReportGenerator.formatNumber(this._currentReport.totalTokens)}\n- Active Time: ${ReportGenerator.formatDuration(this._currentReport.activeDurationSeconds)} (${this._currentReport.totalSessions} sessions)`;
                             vscode.window.showInformationMessage('Valuation summary copied to clipboard!');
                         } else {
-                            summary = `📊 [Antigravity AI Cost] Dự án: ${this._currentReport.projectName}\n- Chi phí Token AI: ${cost}\n- Định giá đề xuất: ${val}\n- Tổng Tokens: ${ReportGenerator.formatNumber(this._currentReport.totalTokens)}\n- Active Time: ${ReportGenerator.formatDuration(this._currentReport.activeDurationSeconds)} (${this._currentReport.totalSessions} sessions)`;
+                            summary = `📊 [Acost] Dự án: ${this._currentReport.projectName}\n- Chi phí Token AI: ${cost}\n- Định giá đề xuất: ${val}\n- Tổng Tokens: ${ReportGenerator.formatNumber(this._currentReport.totalTokens)}\n- Active Time: ${ReportGenerator.formatDuration(this._currentReport.activeDurationSeconds)} (${this._currentReport.totalSessions} sessions)`;
                             vscode.window.showInformationMessage('Đã sao chép tóm tắt định giá vào Clipboard!');
                         }
                         await vscode.env.clipboard.writeText(summary);
@@ -73,7 +73,7 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
                     break;
                 }
                 case 'openSettings':
-                    vscode.commands.executeCommand('workbench.action.openSettings', 'antigravityCost');
+                    vscode.commands.executeCommand('workbench.action.openSettings', 'acost');
                     break;
             }
         });
@@ -102,7 +102,7 @@ export class CostSidebarProvider implements vscode.WebviewViewProvider {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Antigravity Project AI Cost</title>
+    <title>Acost - AI Project Cost & Valuation</title>
     <style>
         :root {
             --bg-color: var(--vscode-sideBar-background, #18181b);

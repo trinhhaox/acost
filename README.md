@@ -1,4 +1,4 @@
-# Antigravity AI Cost & Project Valuation Extension 📊
+# Acost - AI Cost & Project Valuation Extension 📊
 
 Extension độc lập cho **Antigravity IDE / VS Code** giúp đo lường toàn diện chi phí AI khi xây dựng dự án:
 - 🤖 **Nhận diện Model:** Đo lường các model AI tham gia lập trình (Gemini 3.7 Flash, Claude 3.7 Sonnet, GPT-4o, Claude 3.5 Sonnet, v.v.).
@@ -16,7 +16,6 @@ Extension độc lập cho **Antigravity IDE / VS Code** giúp đo lường toà
 
 ### 1. Build & Đóng gói VSIX
 ```bash
-cd tools/antigravity-cost
 npm install
 npm run build
 npx vsce package
@@ -25,27 +24,28 @@ npx vsce package
 ### 2. Cài đặt vào Antigravity IDE / VS Code
 - Chạy lệnh cài đặt từ terminal:
   ```bash
-  code --install-extension antigravity-cost-1.0.0.vsix
+  code --install-extension acost-1.3.0.vsix
   # hoặc trong Antigravity CLI:
-  agy --install-extension antigravity-cost-1.0.0.vsix
+  agy --install-extension acost-1.3.0.vsix
   ```
-- Hoặc mở Antigravity IDE -> Extensions -> `...` -> **Install from VSIX...** -> Chọn file `antigravity-cost-1.0.0.vsix`.
+- Hoặc mở Antigravity IDE -> Extensions -> `...` -> **Install from VSIX...** -> Chọn file `acost-1.3.0.vsix`.
 
 ---
 
 ## ⚙️ Cấu Hình (Settings)
 
-Mở Settings (`Cmd+,`) và tìm `antigravityCost`:
+Mở Settings (`Cmd+,`) và tìm `acost`:
 
 | Cấu hình | Mặc định | Mô tả |
 | :--- | :--- | :--- |
-| `antigravityCost.currency` | `USD` | Tiền tệ hiển thị (`USD` hoặc `VND`) |
-| `antigravityCost.vndExchangeRate` | `25500` | Tỷ giá quy đổi USD sang VND |
-| `antigravityCost.markupMultiplier` | `2.5` | Hệ số nhân định giá dự án trên chi phí AI |
-| `antigravityCost.humanHourlyRate` | `25` | Mức lương tương đương / giờ của Dev truyền thống ($) |
-| `antigravityCost.customPricing` | `{}` | Tùy chỉnh giá token cho từng model cụ thể |
+| `acost.currency` | `USD` | Tiền tệ hiển thị (`USD` hoặc `VND`) |
+| `acost.vndExchangeRate` | `25500` | Tỷ giá quy đổi USD sang VND |
+| `acost.markupMultiplier` | `2.5` | Hệ số nhân định giá dự án trên chi phí AI |
+| `acost.humanHourlyRate` | `25` | Mức lương tương đương / giờ của Dev truyền thống ($) |
+| `acost.customPricing` | `{}` | Tùy chỉnh giá token cho từng model cụ thể |
 
 ---
 
 ## 📋 Báo Cáo Định Giá Mẫu
-Khi xuất báo cáo (`antigravity-cost.exportReport`), extension sẽ tạo file `PROJECT_VALUATION_REPORT.md` ngay tại thư mục gốc dự án chứa đầy đủ bảng số liệu chi tiết, tỷ lệ phần trăm từng model và bảng phân tích tiết kiệm chi phí.
+Khi xuất báo cáo (`acost.exportReport`), extension sẽ tạo file `PROJECT_VALUATION_REPORT.md` ngay tại thư mục gốc dự án chứa đầy đủ bảng số liệu chi tiết, tỷ lệ phần trăm từng model và bảng phân tích tiết kiệm chi phí.
+

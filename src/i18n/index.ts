@@ -2,8 +2,8 @@ export type Language = 'vi' | 'en';
 
 export const TRANSLATIONS = {
     vi: {
-        extensionTitle: 'Project AI Cost',
-        dashboardTitle: '✨ AI Project Cost',
+        extensionTitle: 'Acost',
+        dashboardTitle: '✨ Acost Dashboard',
         refreshTooltip: 'Làm mới dữ liệu',
         settingsTooltip: 'Cài đặt',
         currentProjectPrefix: '📍 Dự án hiện tại',
@@ -62,8 +62,8 @@ export const TRANSLATIONS = {
         menuSettingsDesc: 'Chỉnh Markup, Tỷ giá VND, Dev rate, Ngôn ngữ'
     },
     en: {
-        extensionTitle: 'Project AI Cost',
-        dashboardTitle: '✨ AI Project Cost',
+        extensionTitle: 'Acost',
+        dashboardTitle: '✨ Acost Dashboard',
         refreshTooltip: 'Refresh Data',
         settingsTooltip: 'Settings',
         currentProjectPrefix: '📍 Current Project',

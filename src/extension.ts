@@ -17,19 +17,21 @@ let currentReport: ProjectCostReport | null = null;
 let currentConfig: PricingConfig;
 let refreshTimer: NodeJS.Timeout | null = null;
 let brainWatcher: fs.FSWatcher | null = null;
+let claudeWatcher: fs.FSWatcher | null = null;
 let currentSelectedWorkspace: string | undefined = undefined;
 let currentDateFilter: 'all' | 'today' | '7d' | '30d' = 'all';
 
 function loadConfig(): PricingConfig {
-    const wsConfig = vscode.workspace.getConfiguration('antigravityCost');
+    const wsConfig = vscode.workspace.getConfiguration('acost');
+    const legacyConfig = vscode.workspace.getConfiguration('antigravityCost');
     const defaultLang = vscode.env.language.startsWith('vi') ? 'vi' : 'vi';
     return {
-        language: wsConfig.get<'vi' | 'en'>('language', defaultLang),
-        currency: wsConfig.get<'USD' | 'VND'>('currency', 'USD'),
-        vndExchangeRate: wsConfig.get<number>('vndExchangeRate', 25500),
-        markupMultiplier: wsConfig.get<number>('markupMultiplier', 2.5),
-        humanHourlyRate: wsConfig.get<number>('humanHourlyRate', 25),
-        customPricing: wsConfig.get<Record<string, any>>('customPricing', {})
+        language: wsConfig.get<'vi' | 'en'>('language', legacyConfig.get<'vi' | 'en'>('language', defaultLang)),
+        currency: wsConfig.get<'USD' | 'VND'>('currency', legacyConfig.get<'USD' | 'VND'>('currency', 'USD')),
+        vndExchangeRate: wsConfig.get<number>('vndExchangeRate', legacyConfig.get<number>('vndExchangeRate', 25500)),
+        markupMultiplier: wsConfig.get<number>('markupMultiplier', legacyConfig.get<number>('markupMultiplier', 2.5)),
+        humanHourlyRate: wsConfig.get<number>('humanHourlyRate', legacyConfig.get<number>('humanHourlyRate', 25)),
+        customPricing: wsConfig.get<Record<string, any>>('customPricing', legacyConfig.get<Record<string, any>>('customPricing', {}))
     };
 }
 
@@ -62,11 +64,11 @@ async function performScan(showNotification = false, targetWs?: string, dateFilt
         const isEn = currentConfig.language === 'en';
         if (isEn) {
             vscode.window.showInformationMessage(
-                `Antigravity Cost [${currentReport.projectName}]: Scanned ${currentReport.totalSessions} sessions (${ReportGenerator.formatNumber(currentReport.totalTokens)} tokens, ~$${currentReport.totalCostUSD.toFixed(3)})`
+                `Acost [${currentReport.projectName}]: Scanned ${currentReport.totalSessions} sessions (${ReportGenerator.formatNumber(currentReport.totalTokens)} tokens, ~$${currentReport.totalCostUSD.toFixed(3)})`
             );
         } else {
             vscode.window.showInformationMessage(
-                `Antigravity Cost [${currentReport.projectName}]: Đã quét ${currentReport.totalSessions} sessions (${ReportGenerator.formatNumber(currentReport.totalTokens)} tokens, ~$${currentReport.totalCostUSD.toFixed(3)})`
+                `Acost [${currentReport.projectName}]: Đã quét ${currentReport.totalSessions} sessions (${ReportGenerator.formatNumber(currentReport.totalTokens)} tokens, ~$${currentReport.totalCostUSD.toFixed(3)})`
             );
         }
     }
@@ -112,22 +114,37 @@ async function handleExportReport(format: 'markdown' | 'html' | 'json' = 'markdo
 }
 
 function initLiveWatcher() {
+    let debounceTimer: NodeJS.Timeout | null = null;
+    const triggerDebouncedScan = () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            performScan();
+        }, 1500);
+    };
+
+    // Watch Antigravity Brain logs
     try {
         const brainDir = path.join(os.homedir(), '.gemini', 'antigravity-ide', 'brain');
         if (fs.existsSync(brainDir)) {
-            let debounceTimer: NodeJS.Timeout | null = null;
             brainWatcher = fs.watch(brainDir, { recursive: true }, (eventType, filename) => {
                 if (filename && filename.endsWith('transcript.jsonl')) {
-                    if (debounceTimer) clearTimeout(debounceTimer);
-                    debounceTimer = setTimeout(() => {
-                        performScan();
-                    }, 1500);
+                    triggerDebouncedScan();
                 }
             });
         }
-    } catch (err) {
-        // Watcher fallback
-    }
+    } catch (err) {}
+
+    // Watch Claude Code CLI logs
+    try {
+        const claudeDir = path.join(os.homedir(), '.claude', 'projects');
+        if (fs.existsSync(claudeDir)) {
+            claudeWatcher = fs.watch(claudeDir, { recursive: true }, (eventType, filename) => {
+                if (filename && filename.endsWith('.jsonl')) {
+                    triggerDebouncedScan();
+                }
+            });
+        }
+    } catch (err) {}
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -154,45 +171,45 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider('antigravity-cost.sidebar', sidebarProvider)
+        vscode.window.registerWebviewViewProvider('acost.sidebar', sidebarProvider)
     );
 
     context.subscriptions.push(statusBar);
 
     // Đăng ký Commands
     context.subscriptions.push(
-        vscode.commands.registerCommand('antigravity-cost.refresh', async () => {
+        vscode.commands.registerCommand('acost.refresh', async () => {
             await performScan(true);
         })
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('antigravity-cost.exportReport', async () => {
+        vscode.commands.registerCommand('acost.exportReport', async () => {
             await handleExportReport('markdown');
         })
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('antigravity-cost.exportHtmlReport', async () => {
+        vscode.commands.registerCommand('acost.exportHtmlReport', async () => {
             await handleExportReport('html');
         })
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('antigravity-cost.openDashboard', () => {
-            vscode.commands.executeCommand('antigravity-cost.sidebar.focus');
+        vscode.commands.registerCommand('acost.openDashboard', () => {
+            vscode.commands.executeCommand('acost.sidebar.focus');
         })
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('antigravity-cost.checkUpdate', async () => {
+        vscode.commands.registerCommand('acost.checkUpdate', async () => {
             await checkForUpdates(context, currentConfig, true);
         })
     );
 
     // Quick Pick Menu song ngữ
     context.subscriptions.push(
-        vscode.commands.registerCommand('antigravity-cost.menu', async () => {
+        vscode.commands.registerCommand('acost.menu', async () => {
             const t = getTranslation(currentConfig.language);
             type MenuItem = vscode.QuickPickItem & { id: string };
             const items: MenuItem[] = [
@@ -207,14 +224,14 @@ export function activate(context: vscode.ExtensionContext) {
             ];
 
             const pick = await vscode.window.showQuickPick(items, {
-                placeHolder: `Antigravity AI Cost & Valuation (${currentConfig.language.toUpperCase()})`
+                placeHolder: `Acost - AI Cost & Valuation (${currentConfig.language.toUpperCase()})`
             });
 
             if (!pick) return;
 
             switch (pick.id) {
                 case 'dashboard':
-                    vscode.commands.executeCommand('antigravity-cost.sidebar.focus');
+                    vscode.commands.executeCommand('acost.sidebar.focus');
                     break;
                 case 'refresh':
                     await performScan(true);
@@ -245,7 +262,7 @@ export function activate(context: vscode.ExtensionContext) {
                     break;
                 }
                 case 'settings':
-                    vscode.commands.executeCommand('workbench.action.openSettings', 'antigravityCost');
+                    vscode.commands.executeCommand('workbench.action.openSettings', 'acost');
                     break;
             }
         })
@@ -254,7 +271,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Lắng nghe thay đổi config
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(async (e) => {
-            if (e.affectsConfiguration('antigravityCost')) {
+            if (e.affectsConfiguration('acost') || e.affectsConfiguration('antigravityCost')) {
                 currentConfig = loadConfig();
                 scanner.updateConfig(currentConfig);
                 await performScan();
@@ -278,7 +295,9 @@ export function activate(context: vscode.ExtensionContext) {
     }, 1000);
 
     // Tự động kiểm tra cập nhật sau 3 giây khởi động
-    const autoCheck = vscode.workspace.getConfiguration('antigravityCost').get<boolean>('autoCheckUpdates', true);
+    const autoCheck = vscode.workspace.getConfiguration('acost').get<boolean>('autoCheckUpdates',
+        vscode.workspace.getConfiguration('antigravityCost').get<boolean>('autoCheckUpdates', true)
+    );
     if (autoCheck) {
         setTimeout(() => {
             checkForUpdates(context, currentConfig, false);
@@ -299,5 +318,9 @@ export function deactivate() {
     if (brainWatcher) {
         brainWatcher.close();
         brainWatcher = null;
+    }
+    if (claudeWatcher) {
+        claudeWatcher.close();
+        claudeWatcher = null;
     }
 }

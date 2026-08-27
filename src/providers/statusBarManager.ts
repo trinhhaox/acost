@@ -11,8 +11,8 @@ export class StatusBarManager {
             vscode.StatusBarAlignment.Right,
             95
         );
-        this.statusBarItem.command = 'antigravity-cost.menu';
-        this.statusBarItem.text = '$(sparkle) AI Cost: Scanning...';
+        this.statusBarItem.command = 'acost.menu';
+        this.statusBarItem.text = '$(sparkle) Acost: Scanning...';
         this.statusBarItem.tooltip = 'Đang quét dữ liệu chi phí dự án...';
         this.statusBarItem.show();
     }
@@ -22,7 +22,7 @@ export class StatusBarManager {
         const isEn = config.language === 'en';
 
         if (!report || report.totalSessions === 0) {
-            this.statusBarItem.text = '$(sparkle) AI Cost: $0.00';
+            this.statusBarItem.text = '$(sparkle) Acost: $0.00';
             this.statusBarItem.tooltip = new vscode.MarkdownString(t.noSessionsFound);
             return;
         }
@@ -38,14 +38,14 @@ export class StatusBarManager {
 
         const timeStr = ReportGenerator.formatDuration(report.activeDurationSeconds);
 
-        this.statusBarItem.text = `$(sparkle) ${costStr} (${tokStr} tok)`;
+        this.statusBarItem.text = `$(sparkle) Acost: ${costStr} (${tokStr} tok)`;
 
         // Tooltip phong phú với Markdown song ngữ
         const tooltip = new vscode.MarkdownString();
         tooltip.isTrusted = true;
 
         if (isEn) {
-            tooltip.appendMarkdown(`### 📊 **Antigravity AI Cost & Valuation**\n\n`);
+            tooltip.appendMarkdown(`### 📊 **Acost - AI Cost & Valuation**\n\n`);
             tooltip.appendMarkdown(`- **AI Token Cost:** \`$${report.totalCostUSD.toFixed(4)}\` (~${ReportGenerator.formatNumber(report.totalCostVND)} ₫)\n`);
             tooltip.appendMarkdown(`- **Recommended Valuation:** \`$${report.valuation.recommendedValuationUSD.toFixed(2)}\` (~${ReportGenerator.formatNumber(report.valuation.recommendedValuationVND)} ₫)\n`);
             tooltip.appendMarkdown(`- **Total Tokens:** \`${ReportGenerator.formatNumber(report.totalTokens)}\` tokens\n`);
@@ -59,7 +59,7 @@ export class StatusBarManager {
             }
             tooltip.appendMarkdown(`\n*Click to open menu & export report.*`);
         } else {
-            tooltip.appendMarkdown(`### 📊 **Antigravity AI Cost & Valuation**\n\n`);
+            tooltip.appendMarkdown(`### 📊 **Acost - AI Cost & Valuation**\n\n`);
             tooltip.appendMarkdown(`- **Chi phí AI Token:** \`$${report.totalCostUSD.toFixed(4)}\` (~${ReportGenerator.formatNumber(report.totalCostVND)} ₫)\n`);
             tooltip.appendMarkdown(`- **Định giá đề xuất:** \`$${report.valuation.recommendedValuationUSD.toFixed(2)}\` (~${ReportGenerator.formatNumber(report.valuation.recommendedValuationVND)} ₫)\n`);
             tooltip.appendMarkdown(`- **Tổng Tokens:** \`${ReportGenerator.formatNumber(report.totalTokens)}\` tokens\n`);

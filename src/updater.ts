@@ -5,7 +5,7 @@ import { PricingConfig } from './types';
 import { isNewerVersion } from './utils/version';
 
 const REPO_OWNER = 'trinhhaox';
-const REPO_NAME = 'antigravity-cost';
+const REPO_NAME = 'acost';
 const RELEASES_API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest`;
 const TAGS_API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/tags`;
 
@@ -19,7 +19,7 @@ export async function checkForUpdates(context: vscode.ExtensionContext, config: 
 
         const options = {
             headers: {
-                'User-Agent': 'Antigravity-AI-Cost-Extension',
+                'User-Agent': 'Acost-Extension',
                 'Accept': 'application/vnd.github.v3+json'
             }
         };
@@ -42,8 +42,8 @@ export async function checkForUpdates(context: vscode.ExtensionContext, config: 
                             showUpdateNotification(latestVersion, release.html_url, isEn);
                         } else if (isManual) {
                             const upToDateMsg = isEn
-                                ? `Antigravity AI Cost is up to date (v${currentVersion}).`
-                                : `Antigravity AI Cost đã là phiên bản mới nhất (v${currentVersion}).`;
+                                ? `Acost is up to date (v${currentVersion}).`
+                                : `Acost đã là phiên bản mới nhất (v${currentVersion}).`;
                             vscode.window.showInformationMessage(upToDateMsg);
                         }
                     } catch (e) {
@@ -71,7 +71,7 @@ export async function checkForUpdates(context: vscode.ExtensionContext, config: 
 function fallbackCheckTags(currentVersion: string, isEn: boolean, isManual: boolean) {
     const options = {
         headers: {
-            'User-Agent': 'Antigravity-AI-Cost-Extension',
+            'User-Agent': 'Acost-Extension',
             'Accept': 'application/vnd.github.v3+json'
         }
     };
@@ -98,8 +98,8 @@ function fallbackCheckTags(currentVersion: string, isEn: boolean, isManual: bool
 
             if (isManual) {
                 const upToDateMsg = isEn
-                    ? `Antigravity AI Cost is up to date (v${currentVersion}).`
-                    : `Antigravity AI Cost đã là phiên bản mới nhất (v${currentVersion}).`;
+                    ? `Acost is up to date (v${currentVersion}).`
+                    : `Acost đã là phiên bản mới nhất (v${currentVersion}).`;
                 vscode.window.showInformationMessage(upToDateMsg);
             }
         });
@@ -112,8 +112,8 @@ async function showUpdateNotification(newVersion: string, url: string, isEn: boo
     const actionChangelog = isEn ? 'View Changelog' : 'Xem Chi Tiết';
 
     const message = isEn
-        ? `🚀 A new version of Antigravity AI Cost (v${newVersion}) is available on GitHub!`
-        : `🚀 Đã có phiên bản mới của Antigravity AI Cost (v${newVersion}) trên GitHub!`;
+        ? `🚀 A new version of Acost (v${newVersion}) is available on GitHub!`
+        : `🚀 Đã có phiên bản mới của Acost (v${newVersion}) trên GitHub!`;
 
     const result = await vscode.window.showInformationMessage(
         message,
